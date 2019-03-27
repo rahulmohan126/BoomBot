@@ -25,24 +25,22 @@ To stop just type stop into the shell and enter.
 
 ## Versions
 
-### v1.0.0
-Basic bot, includes:
-* Now playing (np)
-* Pause
-* Ping
-* Play
-* Queue
-* Resume
-* Skip
-* Stop
-* Volume (vol)
-
-Bot will constantly updated until archived
+### v1.0
+Commands include:
+* np (now playing)
+* pause
+* ping
+* play
+* queue
+* resume
+* skip
+* stop
+* vol (volume)
 
 ## License
 
 MIT License - [LICENSE](LICENSE)
 
-## Official Contributors
+## Contributors
 
 OC - [prgrmr126](https://github.com/prgrmr126)
