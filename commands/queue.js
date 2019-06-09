@@ -1,7 +1,7 @@
 module.exports = {
 	main: function(bot, msg) {
 		const serverQueue = bot.queue.get(msg.guild.id);
-		if (!serverQueue) return msg.channel.send('There is nothing playing.');
+		if (!serverQueue) return bot.sendNotification('There is nothing playing.', 'error', msg);
 		return msg.channel.send(`
 __**Song bot.queue:**__
 

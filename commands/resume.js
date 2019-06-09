@@ -4,9 +4,12 @@ module.exports = {
 		if (serverQueue && !serverQueue.playing) {
 			serverQueue.playing = true;
 			serverQueue.connection.dispatcher.resume();
-			return msg.channel.send('▶ Resumed the music for you!');
+			return bot.sendNotification('▶ Resumed the music for you!', 'success', msg);
 		}
-		return msg.channel.send('There is nothing playing.');
+		else if (serverQueue && serverQueue.playing) {
+			return bot.sendNotification('Music is already playing', 'success', 'msg');
+		}
+		return bot.sendNotification('There is nothing playing.', 'error', msg);
 	 },
 	help: '`resume`'
 };

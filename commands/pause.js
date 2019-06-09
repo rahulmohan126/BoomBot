@@ -4,9 +4,10 @@ module.exports = {
 		if (serverQueue && serverQueue.playing) {
 			serverQueue.playing = false;
 			serverQueue.connection.dispatcher.pause();
-			return msg.channel.send('⏸ Paused the music for you!');
+			return bot.sendNotification('⏸ Music paused!', 'success', msg);
 		}
-		return msg.channel.send('There is nothing playing.');
+		else if (serverQueue && !serverQueue.playing) return bot.sendNotification('⏸ Music already paused!', 'success', msg);
+		else return bot.sendNotification('There is nothing playing.', 'error', msg);
 	 },
 	help: '`pause`'
 };
