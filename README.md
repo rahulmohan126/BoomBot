@@ -8,6 +8,31 @@ This project is still in progress so report any bugs or issues and they will be 
 
 ## Installation
 
+##### Create a settings.json
+```
+{
+	"BOTID":"Your client id",
+	"OWNERID":"Your id",
+	"PREFIX":"Your prefix",
+	"TOKEN":"Your client token",
+	"GOOGLE_API_KEY":"Your api key"
+}
+```
+
+Put all ids/tokens/keys in between the quotation marks.
+
+### Creating a Bot
+
+Login to your discord account and go to [this](https://discordapp.com/developers/applications/) link. Select "new application" and input a name. Once application is created, copy the **client id** from General Information. Then select bot on the left and select "add bot" and confirm (you may need to change your application name in general information if too many users have this username). Once bot is added, in the bot menu, select "click to reveal token" to get the **client token**.
+
+In order to get your id, open up the discord app, go to settings -> appearence, then scroll down to Developer Mode and toggle it on. Then go to a server that you are in and find yourself in the member list and right click. "Copy ID" should show up, click it and **your id** will autmatically be copied to your clipboard.
+
+**Your prefix** is up to you to choose, preferably pick something short and uncommon to start a message with such as "?".
+
+For your api key, go to [this](https://developers.google.com/youtube/v3/getting-started) link and follow instructions 1-3 (make sure to create an unrestricted key). Then go to [this](https://console.developers.google.com/) link and go to the Credentials menu, under API keys, you should see the key you created, copy the **key** and paste it into your settings.json
+
+:warning: DO NOT SHARE YOUR API KEY OR CLIENT TOKEN WITH ANYONE :warning:
+
 ### Requirements
 
 1. node.js
@@ -23,26 +48,26 @@ NPM (node package manager) is installed with Node.
 #### discord.js
 
 ```
-npm install discord.js
+npm install -g discord.js
 ```
 
 #### ytdl-core
 Either use opusscript or node-opus
 
 ```
-npm install opusscript ytdl-core
+npm install -g opusscript ytdl-core
 ```
 
 or
 
 ```
-npm install node-opus ytdl-core
+npm install -g node-opus ytdl-core
 ```
 
 #### simple-youtube-api
 
 ```
-npm install simple-youtube-api
+npm install -g simple-youtube-api
 ```
 
 ## Usage

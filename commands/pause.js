@@ -1,6 +1,6 @@
 module.exports = {
 	main: function(bot, msg) {
-        const serverQueue = bot.queue.get(msg.guild.id);
+		const serverQueue = bot.queue.get(msg.guild.id);
 		if (serverQueue && serverQueue.playing) {
 			serverQueue.playing = false;
 			serverQueue.connection.dispatcher.pause();

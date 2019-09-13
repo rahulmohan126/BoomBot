@@ -101,13 +101,13 @@ bot.timeToSong = function(serverMap) {
 bot.handleVideo = async function(video, msg, voiceChannel, playlist = false) {
 	const serverQueue = bot.queue.get(msg.guild.id);
 	const song = {
-        id: video.id,
+		id: video.id,
 		title: Discord.Util.escapeMarkdown(video.title),
-        url: `https://www.youtube.com/watch?v=${video.id}`,
+		url: `https://www.youtube.com/watch?v=${video.id}`,
 		thumbnail: video.thumbnails.default.url,
 		duration: video.duration,
 		start: 0
-    };
+	};
 	if (!serverQueue) {
 		const queueConstruct = {
 			textChannel: msg.channel,
@@ -119,10 +119,10 @@ bot.handleVideo = async function(video, msg, voiceChannel, playlist = false) {
 		};
 		bot.queue.set(msg.guild.id, queueConstruct);
 
-        queueConstruct.songs.push(song);
+		queueConstruct.songs.push(song);
 
 		try {
-            var connection = await voiceChannel.join();
+			var connection = await voiceChannel.join();
 			queueConstruct.connection = connection;
 			queueConstruct.songs[0] = bot.play(msg.guild, queueConstruct.songs[0]);
 		} catch (error) {
@@ -145,13 +145,13 @@ bot.play = function(guild, song) {
 		serverQueue.voiceChannel.leave();
 		bot.queue.delete(guild.id);
 		return;
-    }
+	}
 
 	const dispatcher = serverQueue.connection.playStream(ytdl(song.url))
 		.on('end', reason => {
-			if (reason === 'Stream is not generating quickly enough.') serverQueue.textChannel('Sorry, slow network connection...');
+			if (reason === 'Stream is not generating quickly enough.') serverQueue.textChannel.send('Sorry, slow network connection...');
 			else console.log(reason);
-            serverQueue.songs.shift();
+			serverQueue.songs.shift();
 			song = bot.play(guild, serverQueue.songs[0]);
 		})
 		.on('error', error => console.error(error));
@@ -163,7 +163,7 @@ bot.play = function(guild, song) {
 
 bot.saveConfig = function() {
 	const fs = require('fs');
-    fs.writeFileSync(__dirname+'/guild.json', JSON.stringify(bot.db, null, 4));
+	fs.writeFileSync(__dirname+'/guild.json', JSON.stringify(bot.db, null, 4));
 }
 //#endregion
 //#region  ---------------------	Commands	---------------------
@@ -234,22 +234,22 @@ commands.reload.help = '';
 commands.reload.hide = true;
 commands.reload.main = function(bot, msg) {
 	let command = msg.content.split(' ')[1];
-    if (msg.author.id == bot.OWNERID){
-        try {
-            if (commands[command]) {
-                var directory = __dirname+'/commands/'+command+'.js';
-                delete commands[command];
-                delete require.cache[directory];
-                commands[command] = require(directory);
-                bot.sendNotification('Reloaded ' + command + '.js successfully.', 'success', msg);
+	if (msg.author.id == bot.OWNERID){
+		try {
+			if (commands[command]) {
+				var directory = __dirname+'/commands/'+command+'.js';
+				delete commands[command];
+				delete require.cache[directory];
+				commands[command] = require(directory);
+				bot.sendNotification('Reloaded ' + command + '.js successfully.', 'success', msg);
 				if (bot.DETAILED_LOGGING) console.log('Reloaded ' + file);
-            }
-        }
-        catch(err){
-            bot.sendNotification('Command not found', 'error', msg);
-        }
-    }
-    else {
+			}
+		}
+		catch(err){
+			bot.sendNotification('Command not found', 'error', msg);
+		}
+	}
+	else {
 		bot.sendNotification('You do not have permission to use this command.', 'error', msg);
 	}
 }
@@ -257,27 +257,27 @@ commands.reload.main = function(bot, msg) {
 // Load commands
 var loadCommands = function() {
 	var files = fs.readdirSync(__dirname+'/commands/');
-    for (let file of files) {
-        if (file.endsWith('.js')) {
-            commands[file.slice(0, -3)] = require(__dirname+'/commands/'+file);
-            if (bot.DETAILED_LOGGING) console.log('Loaded ' + file.slice(0, -3));
-        }
-    }
-    console.log('———— All Commands Loaded! ————');
+	for (let file of files) {
+		if (file.endsWith('.js')) {
+			commands[file.slice(0, -3)] = require(__dirname+'/commands/'+file);
+			if (bot.DETAILED_LOGGING) console.log('Loaded ' + file.slice(0, -3));
+		}
+	}
+	console.log('———— All Commands Loaded! ————');
 }
 
 //#endregion
-//#region  ---------------------    Functions   ---------------------
+//#region  ---------------------	Functions   ---------------------
 
 var checkGuilds = function() {
 	for (var i = 0; i < bot.guilds.array().length; i++) {
-        var id = bot.guilds.array()[i]['id'];
+		var id = bot.guilds.array()[i]['id'];
 		if (!bot.db[id]) {
 			var newServer = '{"prefix":".", "channels":{"text":[],"voice":[]}}'
 			bot.db[id] = JSON.parse(newServer);
 		}
 	}
-    bot.saveConfig();
+	bot.saveConfig();
 }
 
 var commandListener = readline.createInterface({
@@ -287,47 +287,47 @@ var commandListener = readline.createInterface({
 });
 
 var textAllowed = function(msg) {
-    let guildChannels = bot.db[msg.guild.id].channels.text;
+	let guildChannels = bot.db[msg.guild.id].channels.text;
 	console.log(JSON.stringify(guildChannels));
 	if (guildChannels.length == 0) return true;
-    else {
+	else {
 		if (guildChannels.includes(msg.channel.id)) return true;
 		else if (msg.guild.ownerID === msg.author.id) return true;
 		else return false;
-    }
+	}
 }
 
 //#endregion
 //#region  ---------------------	Handlers	---------------------
 
 bot.on('ready', () => {
-    bot.user.setStatus('online', '');
+	bot.user.setStatus('online', '');
 	loadCommands();
-    checkGuilds();
-    var startuptime = Date.now() - startTime;
-    console.log('Ready to begin! Serving in ' + bot.guilds.array().length + ' servers. Time: '+startuptime+'ms');
+	checkGuilds();
+	var startuptime = Date.now() - startTime;
+	console.log('Ready to begin! Serving in ' + bot.guilds.array().length + ' servers. Time: '+startuptime+'ms');
 });
 
 bot.on('message', msg => {
-    var guildID = msg.guild.id;
+	var guildID = msg.guild.id;
 	if (!(msg.author.id === bot.ID)) {
-	    if (msg.content.startsWith(bot.db[guildID]['prefix'])) {
-	        if (textAllowed(msg)) {
-	            var command = msg.content.split(bot.db[guildID]['prefix'])[1].split(' ')[0];
-	            if (commands[command]) {
-	                console.log(msg.member.id+' in '+msg.guild.id+': '+msg.content);
-	                if (command === 'play') commands[command].main(bot, msg, youtube);
-	                else commands[command].main(bot, msg);
-	            }
-	        }
-	    }
+		if (msg.content.startsWith(bot.db[guildID]['prefix'])) {
+			if (textAllowed(msg)) {
+				var command = msg.content.split(bot.db[guildID]['prefix'])[1].split(' ')[0];
+				if (commands[command]) {
+					console.log(msg.member.id+' in '+msg.guild.id+': '+msg.content);
+					if (command === 'play') commands[command].main(bot, msg, youtube);
+					else commands[command].main(bot, msg);
+				}
+			}
+		}
 	}
 });
 
 bot.on('error', (err) => {
-    console.log('————— BIG ERROR —————');
-    console.log(err);
-    console.log('——— END BIG ERROR ———');
+	console.log('————— BIG ERROR —————');
+	console.log(err);
+	console.log('——— END BIG ERROR ———');
 });
 
 bot.on('disconnected', () => {
@@ -338,8 +338,8 @@ bot.login(bot.TOKEN);
 
 commandListener.on('line', function (line) {
 	if (line === 'stop') {
-        bot.destroy();
-        process.exit(0);
-    }
+		bot.destroy();
+		process.exit(0);
+	}
 });
 //#endregion

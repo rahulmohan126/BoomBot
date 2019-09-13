@@ -6,6 +6,6 @@ module.exports = {
 			var latency = stop - start;
 			return newMsg.edit('Pong `('+latency+'ms)`');
 		});
-    },
+	},
 	help: '`ping`'
 };
