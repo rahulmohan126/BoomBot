@@ -1,6 +1,9 @@
 module.exports = {
 	main: async function(bot, msg, youtube) {
 
+		const Entities = require('html-entities').AllHtmlEntities;
+ 		const entities = new Entities();
+
 		// Check permissions and args
 		const args = msg.content.split(' ');
 		const searchString = args.slice(1).join(' ');
@@ -39,10 +42,10 @@ module.exports = {
 					msg.channel.send(`
 __**Song selection:**__
 
-${videos.map(video2 => `**${++index} -** ${video2.title.replace('&#39;', '\'').replace('&amp;', '&')}`).join('\n')}
+${videos.map(video2 => `**${++index} -** ${entities.decode(video2.title)}`).join('\n')}
 
 Please provide a value to select one of the search results ranging from 1-10.
-					`).then(async (optionsMsg) => {
+					`)
 					try {
 						// Awaiting selection
 						var response = await msg.channel.awaitMessages(msg2 => msg2.content > 0 && msg2.content < 11, {
@@ -56,18 +59,14 @@ Please provide a value to select one of the search results ranging from 1-10.
 					}
 					const videoIndex = parseInt(response.first().content);
 					var video = await youtube.getVideoByID(videos[videoIndex - 1].id);
-					optionsMsg.delete();
-					})
-					.catch(err => {
-						console.log(err);
-					});
+
 				} catch (err) {
 					// No search results
 					console.error(err);
 					return bot.sendNotification('🆘 I could not obtain any search results.', 'error', msg);
 				}
 			}
-			return bot.handleVideo(video, msg, voiceChannel)
+			return(bot.handleVideo(video, msg, voiceChannel))
 			.catch(err => thing = err);
 		}
 		},
