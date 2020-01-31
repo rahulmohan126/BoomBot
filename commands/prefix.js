@@ -1,25 +1,20 @@
 module.exports = {
 	main: function(bot, msg) {
-		if (msg.content.split(' ').length == 1) {
-			var prefix = bot.db[msg.guild.id].prefix;
-			return bot.sendNotification('The current prefix is: '+prefix, 'info', msg);
+
+		const arg = msg.content.split(' ')[0]
+		
+		if (arg === '') {
+			bot.sendNotification(`The current prefix is: ${bot.getGuild(msg.guild.id).prefix}`, 'info', msg);
+		}
+		else if (msg.author.id === msg.guild.ownerID) {
+			bot.getGuild(msg.guild.id).prefix = arg;
+			bot.saveConfig();
+			bot.sendNotification(`The new prefix is ${arg}.`, 'success', msg);
 		}
 		else {
-			if (msg.author.id === msg.guild.ownerID) {
-				var newPrefix = msg.content.split(' ')[1];
-				if (newPrefix.includes(' ')) {
-					return bot.sendNotification('Prefixes cannot contain whitepace.', 'error', msg);
-				}
-				else {
-					bot.db[msg.guild.id].prefix = newPrefix;
-					bot.saveConfig();
-					return bot.sendNotification('The new prefix is '+newPrefix+'.', 'success', msg);
-				}
-			}
-			else {
-				return bot.sendNotification('Only the guild owner can change the prefix.', 'error', msg);
-			}
+			bot.sendNotification('Only the guild owner can change the prefix.', 'error', msg);
 		}
 	},
-	help: 'prefix (new prefix)'
+	help: 'See/set the prefix for the server.',
+	usage: 'prefix (new prefix)'
 };

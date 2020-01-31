@@ -1,7 +1,8 @@
 module.exports = {
 	main: function(bot, msg) {
-		var time = (Date.now() - bot.start)/1000;
-		return msg.channel.send('Uptime: `'+time+'s`');
+		const time = (Date.now() - bot.start) / 1000;
+		msg.channel.send(`Uptime: \`${time}s\``);
 	},
-	help: '`uptime`'
+	help: 'See how long the server has been online.',
+	usage: 'uptime'
 };

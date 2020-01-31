@@ -2,73 +2,84 @@ module.exports = {
 	main: async function(bot, msg, youtube) {
 
 		const Entities = require('html-entities').AllHtmlEntities;
- 		const entities = new Entities();
+		const entities = new Entities();
 
-		// Check permissions and args
 		const args = msg.content.split(' ');
-		const searchString = args.slice(1).join(' ');
-		const url = args[1] ? args[1].replace(/<(.+)>/g, '$1') : '';
+		const searchString = msg.content;
+		const url = args[0] ? args[0].replace(/<(.+)>/g, '$1') : '';
 		const voiceChannel = msg.member.voiceChannel;
-		if (!voiceChannel) return msg.channel.send('Voice channel required in order to start playing music');
+		const guildVoiceChannels = bot.getGuild(msg.guild.id).channels.voice;
+
+		if (!voiceChannel) {
+			bot.sendNotification('Voice channel required in order to start playing music', 'error', msg);
+			return;
+		}
+		else if (guildVoiceChannels.length > 0 ? !guildVoiceChannels.includes(msg.member.voiceChannel.id) : false) {
+			bot.sendNotification('That voice channel is not permitted', 'error', msg);
+			return;
+		}
+		
+
 		const permissions = voiceChannel.permissionsFor(msg.client.user);
-		if ((!bot.db[msg.guild.id].channels.voice.includes(msg.member.voiceChannel.id)) && (bot.db[msg.guild.id].channels.voice.length > 0)) {
-			return bot.sendNotification('That voice channel is not permitted', 'error', msg);
-		}
+
 		if (!permissions.has('CONNECT')) {
-			return bot.sendNotification('I cannot connect to your voice channel, make sure I have the proper permissions!', 'error', msg);
+			bot.sendNotification('I cannot connect to your voice channel, make sure I have the proper permissions!', 'error', msg)
+			return;
 		}
-		if (!permissions.has('SPEAK')) {
-			return bot.sendNotification('I cannot speak in this voice channel, make sure I have the proper permissions!', 'error', msg);
+		else if (!permissions.has('SPEAK')) {
+			bot.sendNotification('I cannot speak in this voice channel, make sure I have the proper permissions!', 'error', msg);
+			return;
 		}
-		// Playlist input
-		if (url.match(/^https?:\/\/(www.youtube.com|youtube.com)\/playlist(.*)$/)) {
+
+		if (url.match( /^.*(youtu.be\/|list=)([^#\&\?]*).*/)) {
 			const playlist = await youtube.getPlaylist(url);
 			const videos = await playlist.getVideos();
 			for (const video of Object.values(videos)) {
-				const video2 = await youtube.getVideoByID(video.id);
 				await bot.handleVideo(video, msg, voiceChannel, true);
 			}
-			return bot.sendNotification(`✅ Playlist: **${playlist.title}** has been added to the bot.queue!`, 'success', msg);
+			bot.sendNotification('✅ Playlist: **${playlist.title}** has been added to the bot.queue!', 'success', msg);
+			return;
 		}
 		else {
-			// Url input
 			try {
 				var video = await youtube.getVideo(url);
-			} catch (error) {
-				// Keyword search
+			}
+			catch (error) {
 				try {
 					var videos = await youtube.searchVideos(searchString, 10);
 					let index = 0;
 					msg.channel.send(`
 __**Song selection:**__
 
-${videos.map(video2 => `**${++index} -** ${entities.decode(video2.title)}`).join('\n')}
+${videos.map(video => `**${++index} -** ${entities.decode(video.title)}`).join('\n')}
 
 Please provide a value to select one of the search results ranging from 1-10.
-					`)
-					try {
-						// Awaiting selection
-						var response = await msg.channel.awaitMessages(msg2 => msg2.content > 0 && msg2.content < 11, {
-							maxMatches: 1,
-							time: 10000,
-							errors: ['time']
-						});
-					} catch (err) {
-						// No valid selection given
-						return bot.sendNotification('No or invalid value entered, cancelling video selection.', 'error', msg);
-					}
-					const videoIndex = parseInt(response.first().content);
-					var video = await youtube.getVideoByID(videos[videoIndex - 1].id);
+					`).then(async function(optionsMsg) {
+						try {
+							var response = await msg.channel.awaitMessages(indexMsg => indexMsg.content > 0 && indexMsg.content < 11, {
+								maxMatches: 1,
+								time: 10000,
+								errors: ['time']
+							});
+						}
+						catch (err) {
+							return bot.sendNotification('No or invalid value entered, cancelling video selection.', 'error', msg);
+						}
 
-				} catch (err) {
-					// No search results
+						optionsMsg.delete();
+						const video = videos[parseInt(response.first().content) - 1];
+						bot.handleVideo(video, msg, voiceChannel).catch(err => console.error(err));
+					})
+					.catch(err => console.error(err));
+				}
+				catch (err) {
 					console.error(err);
 					return bot.sendNotification('🆘 I could not obtain any search results.', 'error', msg);
 				}
 			}
-			return(bot.handleVideo(video, msg, voiceChannel))
-			.catch(err => thing = err);
+			bot.handleVideo(video, msg, voiceChannel).catch(err => console.error(err));
 		}
-		},
-		help: '`play [playlist | link | search term]`'
+	},
+	help: 'Play any youtube video, use keywords, direct links, or playlists.',
+	usage: 'play [keyword | video link | playlist link]',
 };

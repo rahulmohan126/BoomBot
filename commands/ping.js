@@ -1,11 +1,11 @@
 module.exports = {
 	main: function(bot, msg) {
-		var start = Date.now();
-		msg.channel.send('Pong!').then(function(newMsg) {
-			var stop = Date.now();
-			var latency = stop - start;
-			return newMsg.edit('Pong `('+latency+'ms)`');
+		const start = Date.now();
+		msg.channel.send('Pong!').then(function(msg) {
+			const latency = Date.now() - start;
+			msg.edit(`Pong \`(${latency}ms)\``);
 		});
 	},
-	help: '`ping`'
+	help: '`Ping the server for latency`',
+	usage: 'pause'
 };

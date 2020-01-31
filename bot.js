@@ -6,7 +6,7 @@ const YouTube = require('simple-youtube-api');
 const fs = require('fs');
 const ytdl = require('ytdl-core');
 const readline = require('readline');
-var bot = new Discord.Client({autoReconnect: true});
+const bot = new Discord.Client({autoReconnect: true});
 //#endregion
 //#region  ---------------------	  Bot		---------------------
 
@@ -29,85 +29,107 @@ const youtube = new YouTube(bot.GOOGLE_API_KEY);
 bot.start = startTime;
 bot.db = JSON.parse(fs.readFileSync(__dirname+'/guild.json'));
 bot.queue = new Map();
-bot.DELETE_COMMANDS = false;
+bot.DETAILED_LOGGING = true;
 
 // Functions
 bot.sendNotification = function(info, code, msg) {
-	var icolor;
+	var color;
 
-	if(code === 'success') icolor = bot.SUCCESS_COLOR;
-	else if(code === 'error') icolor = bot.ERROR_COLOR;
-	else if(code == 'info') icolor = bot.INFO_COLOR;
-	else icolor = bot.COLOR;
+	switch (code) {
+		case 'success':
+			color = bot.SUCCESS_COLOR;
+			break;
+		case 'error':
+			color = bot.ERROR_COLOR;
+			break;
+		case 'info':
+			color = bot.INFO_COLOR;
+			break;
+		default:
+			color = bot.COLOR;
+			break;
+	}
 
 	let embed = {
-		color: icolor,
+		color: color,
 		description: info
-	}
+	};
+
 	msg.channel.send('', {embed});
-}
+};
 
-bot.durationMS = function(duration) {
+// YouTube duration (string) to seconds (number)
+bot.durationSeconds = function(duration) {
+	const letter = ['S', 'M', 'H'];
+	const value = [1, 60, 360];
+	const durationComponents = duration.slice(2, duration.length).split(/(.+?[A-Z])/g);
+
 	var time = 0;
-	if (duration.years != 0) {
-		time += (31536000*duration.years);
-	}
-	if (duration.months != 0) {
-		time += (2628000*duration.months);
-	}
-	if (duration.weeks != 0) {
-		time += (604800*duration.weeks);
-	}
-	if (duration.days != 0) {
-		time += (86400*duration.days);
-	}
-	if (duration.hours != 0) {
-		time += (3600*duration.hours);
-	}
-	if (duration.minutes != 0) {
-		time += (60*duration.minutes);
-	}
-	if (duration.seconds != 0) {
-		time += duration.seconds;
-	}
-	return (time*1000)
-}
 
-bot.timeToString = function(ms) {
-	totalTime = ms / 1000;
-	var timeStr = '';
-	if (totalTime > 3600) {
-		timeStr += Math.floor(totalTime/3600) + ':';
-		totalTime = totalTime % 3600;
-	}
-	if (totalTime > 60) {
-		timeStr += Math.floor(totalTime/60) + ':';
-		totalTime = totalTime % 60;
-	}
-	if (totalTime > 0) {
-		timeStr += totalTime;
-	}
-	return timeStr;
-}
+	durationComponents.forEach(element => {
+		if (element != '') {
+			time += parseInt(element.slice(0, element.length - 1)) * value[letter.indexOf(element[element.length - 1])];
+		}
+	});
 
+	return(time * 1000);
+};
+
+// Returns formatted duration
+bot.timeToString = function(duration) {
+	if (typeof duration === 'string') {
+		let durationComponents = duration.slice(2, duration.length).toLowerCase().split(/(.+?[a-z])/g).filter(x => x != '');
+		for (var i = 0; i < durationComponents.length; i++) {
+			durationComponents[i] = durationComponents[i].slice(0, durationComponents[i].length - 1)
+			while (durationComponents[i].length != 2) {
+				durationComponents[i] = '0' + durationComponents[i];
+			}
+		}
+
+		return(durationComponents.join(' '));
+	}
+	else {
+		var timeArray = [];
+
+		while (duration > 0 && timeArray.length < 3) {
+			timeArray.unshift(duration % 60);
+			duration = Math.floor(duration / 60);
+		}
+
+		timeArray.unshift(duration);
+
+		for (var i = 0; i < timeArray.length; i++) {
+			while (durationComponents[i].length != 2) {
+				durationComponents[i] = '0' + durationComponents[i];
+			}
+		}
+
+		return(timeArray.join(' '));
+	}
+};
+
+// Time until next song
 bot.timeToSong = function(serverMap) {
-	var totalTime = serverMap.songs[0].duration - (Date.now() - serverMap.songs[0].start);
-	for (var i=1; i < serverMap.songs.length-1; i++) {
-		totalTime += serverMap.songs[i].duration;
-	}
-	return timeToString(totalTime);
-}
+	var totalTime = serverMap.songs.reduce((sum, song) => sum + bot.durationSeconds(song.duration));
+	totalTime -= Math.floor((Date.now() - serverMap.songs[0].start) / 1000);
+	return bot.timeToString(totalTime);
+};
 
+// Handles video requests from play command
 bot.handleVideo = async function(video, msg, voiceChannel, playlist = false) {
 	const serverQueue = bot.queue.get(msg.guild.id);
+	video = await youtube.getVideoByID(video.id);
 	const song = {
 		id: video.id,
 		title: Discord.Util.escapeMarkdown(video.title),
 		url: `https://www.youtube.com/watch?v=${video.id}`,
 		thumbnail: video.thumbnails.default.url,
-		duration: video.duration,
+		duration: video.raw.contentDetails.duration,
 		start: 0
 	};
+
+	let x = bot.durationSeconds(song.duration);
+
 	if (!serverQueue) {
 		const queueConstruct = {
 			textChannel: msg.channel,
@@ -136,8 +158,9 @@ bot.handleVideo = async function(video, msg, voiceChannel, playlist = false) {
 		else return msg.channel.send(`✅ **${song.title}** has been added to the queue! It will begin playing in ${bot.timeToSong(serverQueue)}`);
 	}
 	return undefined;
-}
+};
 
+// Plays stream of first video in server map
 bot.play = function(guild, song) {
 	const serverQueue = bot.queue.get(guild.id);
 
@@ -153,32 +176,56 @@ bot.play = function(guild, song) {
 			if (reason === 'Stream is not generating quickly enough.') {
 				serverQueue.textChannel.send('Sorry, slow network connection...');
 			}
-			else console.log(reason);
+			if (bot.DETAILED_LOGGING) console.error(`Guild: ${serverQueue.textChannel.guild.name} (${serverQueue.textChannel.guild.id}) | Audio Disconnection: ${reason}`);
+
 			serverQueue.songs.shift();
 			song = bot.play(guild, serverQueue.songs[0]);
 		})
 		.on('error', error => console.error(error));
 	dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
-	serverQueue.textChannel.send(`🎶 Start playing: **${song.title}**`);
+
+	bot.sendNotification(`🎶 Start playing: **${song.title}**`, 'success', {'channel' : serverQueue.textChannel.id});
+
 	song.start = Date.now();
 	return song;
-}
+};
 
+// Gets a guild config from id
+bot.getGuild = function (guildID) {
+	// In case bot guild has been deleted or not created yet
+	if (!bot.db[guildID]) {
+		bot.db[guildID] = {
+			prefix: ".",
+			channels: {
+				text: [],
+				voice: []
+			}
+		};
+
+		bot.saveConfig();
+	}
+
+	return(bot.db[guildID]);
+};
+
+// Saves guild config database to file
 bot.saveConfig = function() {
-	const fs = require('fs');
 	fs.writeFileSync(__dirname+'/guild.json', JSON.stringify(bot.db, null, 4));
-}
+};
+
 //#endregion
 //#region  ---------------------	Commands	---------------------
 
-// Non-file commands
 var commands = {};
+
+// BASE COMMANDS (cannot be reloaded)
 
 commands.help = {};
 commands.help.args = '';
 commands.help.help = '';
 commands.help.hide = true;
 commands.help.main = function(bot, msg) {
+
 	if (msg.content.split(' ').length < 2) {
 		var cmds = [];
 
@@ -187,11 +234,12 @@ commands.help.main = function(bot, msg) {
 				cmds.push(command);
 			}
 		}
+
 		cmds = cmds.join(', ');
 
 		let embed = {
 			color: bot.INFO_COLOR,
-			description: 'Bot prefix: '+bot.db[msg.guild.id]['prefix'],
+			description: 'Bot prefix: '+bot.getGuild(msg.guild.id).prefix,
 			fields: [
 				{
 				name: 'Commands: ',
@@ -203,15 +251,17 @@ commands.help.main = function(bot, msg) {
 				icon_url: bot.user.avatarURL,
 				text: bot.user.username
 			}
-		}
+		};
+
 		msg.channel.send('', {embed});
 	}
 	else {
 		let command = msg.content.split(' ')[1];
+
 		if (commands[command]) {
 			let embed = {
 				color: bot.INFO_COLOR,
-				description: 'Bot prefix: '+bot.db[msg.guild.id]['prefix'],
+				description: 'Bot prefix: '+bot.getGuild(msg.guild.id).prefix,
 				fields: [
 					{
 					name: command,
@@ -222,30 +272,33 @@ commands.help.main = function(bot, msg) {
 					icon_url: bot.user.avatarURL,
 					text: bot.user.username
 				}
-			}
+			};
 			msg.channel.send('', {embed});
 		}
 		else {
 			bot.sendNotification('That command does not exist', 'error', msg);
 		}
 	}
-}
+};
 
 commands.reload = {};
 commands.reload.args = '';
 commands.reload.help = '';
 commands.reload.hide = true;
 commands.reload.main = function(bot, msg) {
-	let command = msg.content.split(' ')[1];
-	if (msg.author.id == bot.OWNERID){
+	let command = msg.content.split(' ')[0];
+
+	if (msg.author.id === bot.OWNERID){
 		try {
 			if (commands[command]) {
+
 				var directory = __dirname+'/commands/'+command+'.js';
 				delete commands[command];
 				delete require.cache[directory];
 				commands[command] = require(directory);
-				bot.sendNotification('Reloaded ' + command + '.js successfully.', 'success', msg);
-				if (bot.DETAILED_LOGGING) console.log('Reloaded ' + file);
+				bot.sendNotification(`Reloaded ${command} command successfully.`, 'success', msg);
+
+				if (bot.DETAILED_LOGGING) console.log(`Command: "${command}" | Status: Reloaded`);
 			}
 		}
 		catch(err){
@@ -255,94 +308,99 @@ commands.reload.main = function(bot, msg) {
 	else {
 		bot.sendNotification('You do not have permission to use this command.', 'error', msg);
 	}
-}
-
-// Load commands
-var loadCommands = function() {
-	var files = fs.readdirSync(__dirname+'/commands/');
-	for (let file of files) {
-		if (file.endsWith('.js')) {
-			commands[file.slice(0, -3)] = require(__dirname+'/commands/'+file);
-			if (bot.DETAILED_LOGGING) console.log('Loaded ' + file.slice(0, -3));
-		}
-	}
-	console.log('———— All Commands Loaded! ————');
-}
+};
 
 //#endregion
 //#region  ---------------------	Functions   ---------------------
 
-var checkGuilds = function() {
-	for (var i = 0; i < bot.guilds.array().length; i++) {
-		var id = bot.guilds.array()[i]['id'];
-		if (!bot.db[id]) {
-			var newServer = '{"prefix":".", "channels":{"text":[],"voice":[]}}'
-			bot.db[id] = JSON.parse(newServer);
-		}
-	}
-	bot.saveConfig();
-}
-
-var commandListener = readline.createInterface({
+var consoleListener = readline.createInterface({
 	input: process.stdin,
 	output: process.stdout,
 	terminal: false
 });
 
-var textAllowed = function(msg) {
-	let guildChannels = bot.db[msg.guild.id].channels.text;
-	console.log(JSON.stringify(guildChannels));
-	if (guildChannels.length == 0) return true;
-	else {
-		if (guildChannels.includes(msg.channel.id)) return true;
-		else if (msg.guild.ownerID === msg.author.id) return true;
-		else return false;
+// Checks if text channel is permitted to use bot commands in.
+var commandsAllowed = function(msg) {
+	let guildChannels = bot.getGuild(msg.guild.id).channels.text;
+
+	if (guildChannels.length === 0 || msg.author.id === msg.guid.ownerID) {
+		return(true);
 	}
-}
+	else if (guildChannels.includes(msg.channel.id)) {
+		return(true);
+	}
+	else {
+		return(false);
+	}
+};
+
+// Loads commands in from ./commands folder
+var loadCommands = function() {
+	var files = fs.readdirSync(__dirname+'/commands/');
+
+	for (let file of files) {
+		if (file.endsWith('.js')) {
+			commands[file.slice(0, -3)] = require(__dirname+'/commands/'+file);
+			if (bot.DETAILED_LOGGING) console.log(`Command: ${file.slice(0, -3)} | Status: Loaded`);
+		}
+	}
+
+	console.log('———— All Commands Loaded! ————');
+};
 
 //#endregion
 //#region  ---------------------	Handlers	---------------------
 
 bot.on('ready', () => {
-	bot.user.setStatus('online', '');
+	bot.user.setActivity(`over ${bot.guilds.array().length} servers...`, { type: 'WATCHING' });
 	loadCommands();
-	checkGuilds();
-	var startuptime = Date.now() - startTime;
-	console.log('Ready to begin! Serving in ' + bot.guilds.array().length + ' servers. Time: '+startuptime+'ms');
+	const startuptime = Date.now() - startTime;
+	console.log(`Ready to begin! Serving in ${bot.guilds.array().length} servers. Startup time: ${startuptime}ms`);
 });
 
 bot.on('message', msg => {
-	var guildID = msg.guild.id;
-	if (!(msg.author.id === bot.ID)) {
-		if (msg.content.startsWith(bot.db[guildID]['prefix'])) {
-			if (textAllowed(msg)) {
-				var command = msg.content.split(bot.db[guildID]['prefix'])[1].split(' ')[0];
-				if (commands[command]) {
-					console.log(msg.member.id+' in '+msg.guild.id+': '+msg.content);
-					if (command === 'play') commands[command].main(bot, msg, youtube);
-					else commands[command].main(bot, msg);
-				}
+	const guildPrefix = bot.getGuild(msg.guild.id).prefix;
+
+	if (msg.author.id != bot.ID && msg.content.startsWith(guildPrefix) && commandsAllowed(msg)) {
+		const command = msg.content.split(' ')[0].slice(guildPrefix.length);
+		msg.content = msg.content.slice(guildPrefix.length + command.length).trimLeft(); // Just the args, removes the prefix and command
+
+		if (bot.DETAILED_LOGGING) console.log(`Guild: ${msg.guild.name} (${msg.guild.id}) | Author: ${msg.author.guildName} (${msg.author.id}) | Message: ${guildPrefix} ${msg.content}`);
+
+		if (commands[command]) {
+			if (command === 'play') {
+				commands[command].main(bot, msg, youtube);
+			}
+			else {
+				commands[command].main(bot, msg);
 			}
 		}
 	}
 });
 
 bot.on('error', (err) => {
-	console.log('————— BIG ERROR —————');
-	console.log(err);
-	console.log('——— END BIG ERROR ———');
+	console.error('—————————— ERROR ——————————');
+	console.error(err);
+	console.error('———————— END ERROR ————————');
 });
 
 bot.on('disconnected', () => {
-	console.log('Disconnected!');
+	console.error('——————— DISCONNECTED ——————');
 });
+
+bot.on('guildCreate', guild => {
+	bot.user.setActivity(`over ${bot.guilds.array().length} servers...`, { type: 'WATCHING' });
+	bot.getGuild(guild.id); // Initializes a new guild
+    if (bot.DETAILED_LOGGING) console.log(`New guild: ${guild.name}`);
+})
 
 bot.login(bot.TOKEN);
 
-commandListener.on('line', function (line) {
-	if (line === 'stop') {
+consoleListener.on('line', function (input) {
+	if (input.includes('stop')) {
 		bot.destroy();
 		process.exit(0);
 	}
 });
+
 //#endregion
