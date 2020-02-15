@@ -7,5 +7,5 @@ module.exports = {
 		});
 	},
 	help: '`Ping the server for latency`',
-	usage: 'pause'
+	usage: 'ping'
 };

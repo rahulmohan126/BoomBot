@@ -69,14 +69,14 @@ Please provide a value to select one of the search results ranging from 1-10.
 						optionsMsg.delete();
 						const video = videos[parseInt(response.first().content) - 1];
 						bot.handleVideo(video, msg, voiceChannel).catch(err => console.error(err));
-					})
-					.catch(err => console.error(err));
+					}).catch(err => console.error(err));
 				}
 				catch (err) {
 					console.error(err);
 					return bot.sendNotification('🆘 I could not obtain any search results.', 'error', msg);
 				}
 			}
+			if (video === undefined) return;
 			bot.handleVideo(video, msg, voiceChannel).catch(err => console.error(err));
 		}
 	},

@@ -6,7 +6,7 @@ module.exports = {
 			bot.sendNotification('There is nothing playing.', 'error', msg);
 		}
 		else {
-			let complete = `${bot.timeToString((Date.now() - serverQueue.songs[0].start) / 1000)} / ${bot.timeToString(serverQueue.songs[0].duration)}`;
+			let complete = `${bot.timeToString(Math.floor((Date.now() - serverQueue.songs[0].start) / 1000))} / ${bot.timeToString(serverQueue.songs[0].duration)}`;
 			bot.sendNotification(`🎶 Now playing: **${serverQueue.songs[0].title}**\nDuration: \`${complete}\``, 'info', msg);
 		}
 	},

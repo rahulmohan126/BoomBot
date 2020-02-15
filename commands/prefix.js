@@ -1,7 +1,7 @@
 module.exports = {
 	main: function(bot, msg) {
 
-		const arg = msg.content.split(' ')[0]
+		const arg = msg.content.split(' ')[0].trim();
 		
 		if (arg === '') {
 			bot.sendNotification(`The current prefix is: ${bot.getGuild(msg.guild.id).prefix}`, 'info', msg);

@@ -11,7 +11,7 @@ const bot = new Discord.Client({autoReconnect: true});
 //#region  ---------------------	  Bot		---------------------
 
 // Required
-const config = JSON.parse(fs.readFileSync(__dirname+'/settings.json'));
+const config = JSON.parse(fs.readFileSync(`${__dirname}/settings.json`));
 bot.ID = config.BOTID;
 bot.OWNERID = config.OWNERID;
 bot.PREFIX = config.PREFIX;
@@ -27,12 +27,12 @@ bot.INFO_COLOR = 0x03A8F4;
 // Other
 const youtube = new YouTube(bot.GOOGLE_API_KEY);
 bot.start = startTime;
-bot.db = JSON.parse(fs.readFileSync(__dirname+'/guild.json'));
+bot.db = JSON.parse(fs.readFileSync(`${__dirname}/guild.json`));
 bot.queue = new Map();
 bot.DETAILED_LOGGING = true;
 
 // Functions
-bot.sendNotification = function(info, code, msg) {
+bot.sendNotification = function(info, code, msg, fields=[]) {
 	var color;
 
 	switch (code) {
@@ -52,7 +52,13 @@ bot.sendNotification = function(info, code, msg) {
 
 	let embed = {
 		color: color,
-		description: info
+		description: info,
+		timestamp: Date(Date.now()),
+		fields: fields,
+		author: {
+			name: msg.author.tag,
+			icon_url: msg.author.avatarURL
+		}
 	};
 
 	msg.channel.send('', {embed});
@@ -61,8 +67,8 @@ bot.sendNotification = function(info, code, msg) {
 // YouTube duration (string) to seconds (number)
 bot.durationSeconds = function(duration) {
 	const letter = ['S', 'M', 'H'];
-	const value = [1, 60, 360];
-	const durationComponents = duration.slice(2, duration.length).split(/(.+?[A-Z])/g);
+	const value = [1, 60, 3600];
+	const durationComponents = duration.slice(2).split(/(.+?[A-Z])/g);
 
 	var time = 0;
 
@@ -72,45 +78,46 @@ bot.durationSeconds = function(duration) {
 		}
 	});
 
-	return(time * 1000);
+	return(time);
 };
 
 // Returns formatted duration
 bot.timeToString = function(duration) {
 	if (typeof duration === 'string') {
 		let durationComponents = duration.slice(2, duration.length).toLowerCase().split(/(.+?[a-z])/g).filter(x => x != '');
+
+		while (durationComponents.length < 3) durationComponents.unshift('0');
+
 		for (var i = 0; i < durationComponents.length; i++) {
 			durationComponents[i] = durationComponents[i].slice(0, durationComponents[i].length - 1)
-			while (durationComponents[i].length != 2) {
-				durationComponents[i] = '0' + durationComponents[i];
-			}
+			
+			durationComponents[i] = '0'.repeat(2 - durationComponents[i].length) + durationComponents[i];
 		}
 
-		return(durationComponents.join(' '));
+		return(durationComponents.join(':'));
 	}
 	else {
 		var timeArray = [];
 
-		while (duration > 0 && timeArray.length < 3) {
-			timeArray.unshift(duration % 60);
+		while (timeArray.length < 3) {
+			timeArray.unshift(String(duration % 60));
 			duration = Math.floor(duration / 60);
 		}
 
-		timeArray.unshift(duration);
-
-		for (var i = 0; i < timeArray.length; i++) {
-			while (durationComponents[i].length != 2) {
-				durationComponents[i] = '0' + durationComponents[i];
-			}
+		for (let i = 0; i < timeArray.length; i++) {
+			timeArray[i] = '0'.repeat(2 - timeArray[i].length) + timeArray[i];
 		}
 
-		return(timeArray.join(' '));
+		return(timeArray.join(':'));
 	}
 };
 
 // Time until next song
 bot.timeToSong = function(serverMap) {
-	var totalTime = serverMap.songs.reduce((sum, song) => sum + bot.durationSeconds(song.duration));
+	let totalTime = 0;
+	for (let i = 0; i < serverMap.songs.length - 1; i++) {
+		totalTime += bot.durationSeconds(serverMap.songs[i].duration);
+	}
 	totalTime -= Math.floor((Date.now() - serverMap.songs[0].start) / 1000);
 	return bot.timeToString(totalTime);
 };
@@ -125,7 +132,8 @@ bot.handleVideo = async function(video, msg, voiceChannel, playlist = false) {
 		url: `https://www.youtube.com/watch?v=${video.id}`,
 		thumbnail: video.thumbnails.default.url,
 		duration: video.raw.contentDetails.duration,
-		start: 0
+		start: 0,
+		user: msg.author
 	};
 
 	let x = bot.durationSeconds(song.duration);
@@ -148,9 +156,7 @@ bot.handleVideo = async function(video, msg, voiceChannel, playlist = false) {
 			queueConstruct.connection = connection;
 			queueConstruct.songs[0] = bot.play(msg.guild, queueConstruct.songs[0]);
 		} catch (error) {
-			console.error(`I could not join the voice channel: ${error}`);
-			bot.queue.delete(msg.guild.id);
-			return msg.channel.send(`I could not join the voice channel: ${error}`);
+			return;
 		}
 	} else {
 		serverQueue.songs.push(song);
@@ -184,7 +190,7 @@ bot.play = function(guild, song) {
 		.on('error', error => console.error(error));
 	dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
 
-	bot.sendNotification(`🎶 Start playing: **${song.title}**`, 'success', {'channel' : serverQueue.textChannel.id});
+	bot.sendNotification(`🎶 Start playing: **${song.title}**`, 'success', {'channel' : serverQueue.textChannel, 'author': song.user});
 
 	song.start = Date.now();
 	return song;
@@ -210,7 +216,7 @@ bot.getGuild = function (guildID) {
 
 // Saves guild config database to file
 bot.saveConfig = function() {
-	fs.writeFileSync(__dirname+'/guild.json', JSON.stringify(bot.db, null, 4));
+	fs.writeFileSync(`${__dirname}/guild.json`, JSON.stringify(bot.db, null, 4));
 };
 
 //#endregion
@@ -226,7 +232,7 @@ commands.help.help = '';
 commands.help.hide = true;
 commands.help.main = function(bot, msg) {
 
-	if (msg.content.split(' ').length < 2) {
+	if (msg.content === '') {
 		var cmds = [];
 
 		for (let command in commands) {
@@ -237,43 +243,29 @@ commands.help.main = function(bot, msg) {
 
 		cmds = cmds.join(', ');
 
-		let embed = {
-			color: bot.INFO_COLOR,
-			description: 'Bot prefix: '+bot.getGuild(msg.guild.id).prefix,
-			fields: [
-				{
-				name: 'Commands: ',
-				value: cmds,
-				inline: true
-				}
-			],
-			footer: {
-				icon_url: bot.user.avatarURL,
-				text: bot.user.username
+		bot.sendNotification(`Bot prefix: ${bot.getGuild(msg.guild.id).prefix}`, 'info', msg, [
+			{
+			name: 'Commands: ',
+			value: cmds,
+			inline: true
 			}
-		};
-
-		msg.channel.send('', {embed});
+		]);
 	}
 	else {
-		let command = msg.content.split(' ')[1];
+		let command = msg.content;
 
 		if (commands[command]) {
-			let embed = {
-				color: bot.INFO_COLOR,
-				description: 'Bot prefix: '+bot.getGuild(msg.guild.id).prefix,
-				fields: [
-					{
-					name: command,
+
+			bot.sendNotification(`Bot prefix: ${bot.getGuild(msg.guild.id).prefix} | Command: ${command}`, 'info', msg, [
+				{
+					name: 'Description: ',
 					value: commands[command].help,
-					}
-				],
-				footer: {
-					icon_url: bot.user.avatarURL,
-					text: bot.user.username
+				},
+				{
+					name: 'Usage: ',
+					value: commands[command].usage,
 				}
-			};
-			msg.channel.send('', {embed});
+			]);
 		}
 		else {
 			bot.sendNotification('That command does not exist', 'error', msg);
@@ -292,7 +284,7 @@ commands.reload.main = function(bot, msg) {
 		try {
 			if (commands[command]) {
 
-				var directory = __dirname+'/commands/'+command+'.js';
+				var directory = `${__dirname}/commands/${command}.js`;
 				delete commands[command];
 				delete require.cache[directory];
 				commands[command] = require(directory);
@@ -320,27 +312,36 @@ var consoleListener = readline.createInterface({
 });
 
 // Checks if text channel is permitted to use bot commands in.
-var commandsAllowed = function(msg) {
-	let guildChannels = bot.getGuild(msg.guild.id).channels.text;
+var validMsg = function(msg) {
+	const guild = bot.getGuild(msg.guild.id);
 
-	if (guildChannels.length === 0 || msg.author.id === msg.guid.ownerID) {
-		return(true);
+	// Put in try-catch in case no mentions are in the message.
+	try {
+		if (!(msg.content.trim().startsWith(guild.prefix) || msg.mentions.members.first().id === bot.ID)) return(false);
 	}
-	else if (guildChannels.includes(msg.channel.id)) {
-		return(true);
-	}
-	else {
+	catch {
 		return(false);
 	}
+
+
+	if (msg.author.id === msg.guild.ownerID) {
+		// Pass, guild owner can send commands in any channel.
+	}
+	// If there are no whitelisted channels, that means all channels are open.
+	else if (guild.channels.text.length >= 0 && !guild.channels.text.includes(msg.channel.id)) {
+		return(false);
+	}
+	
+	return(true);
 };
 
 // Loads commands in from ./commands folder
 var loadCommands = function() {
-	var files = fs.readdirSync(__dirname+'/commands/');
+	var files = fs.readdirSync(`${__dirname}/commands/`);
 
 	for (let file of files) {
 		if (file.endsWith('.js')) {
-			commands[file.slice(0, -3)] = require(__dirname+'/commands/'+file);
+			commands[file.slice(0, -3)] = require(`${__dirname}/commands/${file}`);
 			if (bot.DETAILED_LOGGING) console.log(`Command: ${file.slice(0, -3)} | Status: Loaded`);
 		}
 	}
@@ -361,11 +362,22 @@ bot.on('ready', () => {
 bot.on('message', msg => {
 	const guildPrefix = bot.getGuild(msg.guild.id).prefix;
 
-	if (msg.author.id != bot.ID && msg.content.startsWith(guildPrefix) && commandsAllowed(msg)) {
-		const command = msg.content.split(' ')[0].slice(guildPrefix.length);
-		msg.content = msg.content.slice(guildPrefix.length + command.length).trimLeft(); // Just the args, removes the prefix and command
+	if (msg.author.id != bot.ID && validMsg(msg)) {
+		var command;
+		if (msg.content.startsWith(guildPrefix)) {
+			command = msg.content.split(' ')[0].slice(guildPrefix.length);
+			// Removes prefix and command from beginning of the message
+			msg.content = msg.content.slice(guildPrefix.length + command.length).trimLeft();
+		}
+		// If it is a valid message and doesn't start with the guild prefix, then it must mention the bot.
+		else {
+			command = msg.content.split(' ')[1];
+			// Removes mention and command from beginning of the message
+			msg.content = msg.content.splice(3 + String(bot.ID).length + 1 + 1 + command.length).trimLeft();
+		}
+		
 
-		if (bot.DETAILED_LOGGING) console.log(`Guild: ${msg.guild.name} (${msg.guild.id}) | Author: ${msg.author.guildName} (${msg.author.id}) | Message: ${guildPrefix} ${msg.content}`);
+		if (bot.DETAILED_LOGGING) console.log(`Guild: ${msg.guild.name} (${msg.guild.id}) | Author: ${msg.member.displayName} (${msg.author.id}) | Message: ${guildPrefix}${command} ${msg.content}`);
 
 		if (commands[command]) {
 			if (command === 'play') {
