@@ -7,7 +7,7 @@ module.exports = {
 		}
 		else {
 			msg.channel.send(`
-__**Song bot.queue:**__
+__**Song Queue:**__
 
 ${serverQueue.songs.map(song => `**-** ${song.title}`).join('\n')}
 

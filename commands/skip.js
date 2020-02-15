@@ -9,8 +9,8 @@ module.exports = {
 			bot.sendNotification('There is nothing playing that I could skip for you.', 'error', msg);
 		}
 		else {
-			serverQueue.connection.dispatcher.end();
 			bot.sendNotification('▶︎▶︎ Music skipped!', 'success', msg);
+			serverQueue.connection.dispatcher.end();
 		}
 	},
 	help: 'Skips the current song to the next one in the queue.',
