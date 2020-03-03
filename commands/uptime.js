@@ -1,5 +1,5 @@
 module.exports = {
-	main: function(bot, msg) {
+	main: function (bot, msg) {
 		const time = (Date.now() - bot.start) / 1000;
 		msg.channel.send(`Uptime: \`${time}s\``);
 	},

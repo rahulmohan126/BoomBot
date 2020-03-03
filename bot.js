@@ -6,7 +6,7 @@ const YouTube = require('simple-youtube-api');
 const fs = require('fs');
 const ytdl = require('ytdl-core');
 const readline = require('readline');
-const bot = new Discord.Client({autoReconnect: true});
+const bot = new Discord.Client({ autoReconnect: true });
 //#endregion
 //#region  ---------------------	  Bot		---------------------
 
@@ -32,7 +32,7 @@ bot.queue = new Map();
 bot.DETAILED_LOGGING = true;
 
 // Functions
-bot.sendNotification = function(info, code, msg, fields=[]) {
+bot.sendNotification = function (info, code, msg, fields = []) {
 	var color;
 
 	switch (code) {
@@ -61,11 +61,11 @@ bot.sendNotification = function(info, code, msg, fields=[]) {
 		}
 	};
 
-	msg.channel.send('', {embed});
+	msg.channel.send('', { embed });
 };
 
 // YouTube duration (string) to seconds (number)
-bot.durationSeconds = function(duration) {
+bot.durationSeconds = function (duration) {
 	const letter = ['S', 'M', 'H'];
 	const value = [1, 60, 3600];
 	const durationComponents = duration.slice(2).split(/(.+?[A-Z])/g);
@@ -78,11 +78,11 @@ bot.durationSeconds = function(duration) {
 		}
 	});
 
-	return(time);
+	return (time);
 };
 
 // Returns formatted duration
-bot.timeToString = function(duration) {
+bot.timeToString = function (duration) {
 	if (typeof duration === 'string') {
 		let durationComponents = duration.slice(2, duration.length).toLowerCase().split(/(.+?[a-z])/g).filter(x => x != '');
 
@@ -90,11 +90,11 @@ bot.timeToString = function(duration) {
 
 		for (var i = 0; i < durationComponents.length; i++) {
 			durationComponents[i] = durationComponents[i].slice(0, durationComponents[i].length - 1)
-			
+
 			durationComponents[i] = '0'.repeat(2 - durationComponents[i].length) + durationComponents[i];
 		}
 
-		return(durationComponents.join(':'));
+		return (durationComponents.join(':'));
 	}
 	else {
 		var timeArray = [];
@@ -108,22 +108,22 @@ bot.timeToString = function(duration) {
 			timeArray[i] = '0'.repeat(2 - timeArray[i].length) + timeArray[i];
 		}
 
-		return(timeArray.join(':'));
+		return (timeArray.join(':'));
 	}
 };
 
 // Time until next song
-bot.timeToSong = function(serverMap) {
+bot.timeToSong = function (serverMap) {
 	let totalTime = 0;
 	for (let i = 0; i < serverMap.songs.length - 1; i++) {
 		totalTime += bot.durationSeconds(serverMap.songs[i].duration);
 	}
 	totalTime -= Math.floor((Date.now() - serverMap.songs[0].start) / 1000);
-	return bot.timeToString(totalTime);
+	return (bot.timeToString(totalTime));
 };
 
 // Handles video requests from play command
-bot.handleVideo = async function(video, msg, voiceChannel, playlist = false) {
+bot.handleVideo = async function (video, msg, voiceChannel, playlist = false) {
 	const serverQueue = bot.queue.get(msg.guild.id);
 	video = await youtube.getVideoByID(video.id);
 	const song = {
@@ -160,14 +160,14 @@ bot.handleVideo = async function(video, msg, voiceChannel, playlist = false) {
 		}
 	} else {
 		serverQueue.songs.push(song);
-		if (playlist) return undefined;
-		else return msg.channel.send(`✅ **${song.title}** has been added to the queue! It will begin playing in ${bot.timeToSong(serverQueue)}`);
+		if (playlist) return (undefined);
+		else return (msg.channel.send(`✅ **${song.title}** has been added to the queue! It will begin playing in ${bot.timeToSong(serverQueue)}`));
 	}
-	return undefined;
+	return (undefined);
 };
 
 // Plays stream of first video in server map
-bot.play = function(guild, song) {
+bot.play = function (guild, song) {
 	const serverQueue = bot.queue.get(guild.id);
 
 	if (!song) {
@@ -190,10 +190,10 @@ bot.play = function(guild, song) {
 		.on('error', error => console.error(error));
 	dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
 
-	bot.sendNotification(`🎶 Start playing: **${song.title}**`, 'success', {'channel' : serverQueue.textChannel, 'author': song.user});
+	bot.sendNotification(`🎶 Start playing: **${song.title}**`, 'success', { 'channel': serverQueue.textChannel, 'author': song.user });
 
 	song.start = Date.now();
-	return song;
+	return (song);
 };
 
 // Gets a guild config from id
@@ -211,11 +211,11 @@ bot.getGuild = function (guildID) {
 		bot.saveConfig();
 	}
 
-	return(bot.db[guildID]);
+	return (bot.db[guildID]);
 };
 
 // Saves guild config database to file
-bot.saveConfig = function() {
+bot.saveConfig = function () {
 	fs.writeFileSync(`${__dirname}/guild.json`, JSON.stringify(bot.db, null, 4));
 };
 
@@ -230,7 +230,7 @@ commands.help = {};
 commands.help.args = '';
 commands.help.help = '';
 commands.help.hide = true;
-commands.help.main = function(bot, msg) {
+commands.help.main = function (bot, msg) {
 
 	if (msg.content === '') {
 		var cmds = [];
@@ -245,9 +245,9 @@ commands.help.main = function(bot, msg) {
 
 		bot.sendNotification(`Bot prefix: ${bot.getGuild(msg.guild.id).prefix}`, 'info', msg, [
 			{
-			name: 'Commands: ',
-			value: cmds,
-			inline: true
+				name: 'Commands: ',
+				value: cmds,
+				inline: true
 			}
 		]);
 	}
@@ -277,10 +277,10 @@ commands.reload = {};
 commands.reload.args = '';
 commands.reload.help = '';
 commands.reload.hide = true;
-commands.reload.main = function(bot, msg) {
+commands.reload.main = function (bot, msg) {
 	let command = msg.content.split(' ')[0];
 
-	if (msg.author.id === bot.OWNERID){
+	if (msg.author.id === bot.OWNERID) {
 		try {
 			if (commands[command]) {
 
@@ -293,7 +293,7 @@ commands.reload.main = function(bot, msg) {
 				if (bot.DETAILED_LOGGING) console.log(`Command: "${command}" | Status: Reloaded`);
 			}
 		}
-		catch(err){
+		catch (err) {
 			bot.sendNotification('Command not found', 'error', msg);
 		}
 	}
@@ -312,15 +312,15 @@ var consoleListener = readline.createInterface({
 });
 
 // Checks if text channel is permitted to use bot commands in.
-var validMsg = function(msg) {
+var validMsg = function (msg) {
 	const guild = bot.getGuild(msg.guild.id);
 
 	// Put in try-catch in case no mentions are in the message.
 	try {
-		if (!(msg.content.trim().startsWith(guild.prefix) || msg.mentions.members.first().id === bot.ID)) return(false);
+		if (!(msg.content.trim().startsWith(guild.prefix) || msg.mentions.members.first().id === bot.ID)) return (false);
 	}
 	catch {
-		return(false);
+		return (false);
 	}
 
 
@@ -329,14 +329,14 @@ var validMsg = function(msg) {
 	}
 	// If there are no whitelisted channels, that means all channels are open.
 	else if (guild.channels.text.length >= 0 && !guild.channels.text.includes(msg.channel.id)) {
-		return(false);
+		return (false);
 	}
-	
-	return(true);
+
+	return (true);
 };
 
 // Loads commands in from ./commands folder
-var loadCommands = function() {
+var loadCommands = function () {
 	var files = fs.readdirSync(`${__dirname}/commands/`);
 
 	for (let file of files) {
@@ -375,7 +375,7 @@ bot.on('message', msg => {
 			// Removes mention and command from beginning of the message
 			msg.content = msg.content.splice(3 + String(bot.ID).length + 1 + 1 + command.length).trimLeft();
 		}
-		
+
 
 		if (bot.DETAILED_LOGGING) console.log(`Guild: ${msg.guild.name} (${msg.guild.id}) | Author: ${msg.member.displayName} (${msg.author.id}) | Message: ${guildPrefix}${command} ${msg.content}`);
 
@@ -403,7 +403,7 @@ bot.on('disconnected', () => {
 bot.on('guildCreate', guild => {
 	bot.user.setActivity(`over ${bot.guilds.array().length} servers...`, { type: 'WATCHING' });
 	bot.getGuild(guild.id); // Initializes a new guild
-    if (bot.DETAILED_LOGGING) console.log(`New guild: ${guild.name}`);
+	if (bot.DETAILED_LOGGING) console.log(`New guild: ${guild.name}`);
 })
 
 bot.login(bot.TOKEN);

@@ -1,5 +1,5 @@
 module.exports = {
-	main: function(bot, msg) {
+	main: function (bot, msg) {
 		const serverQueue = bot.queue.get(msg.guild.id);
 
 		if (!serverQueue) {

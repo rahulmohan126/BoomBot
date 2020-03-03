@@ -1,8 +1,8 @@
 module.exports = {
-	main: function(bot, msg) {
+	main: function (bot, msg) {
 		const guild = bot.getGuild(msg.guild.id);
 		const args = msg.content.split(' ');
-				
+
 		try {
 			if ((args[0] === 'add' || args[0] === 'remove') && msg.author.id === msg.guild.ownerID) {
 				let channel = msg.guild.channels.find(channel => channel.name === args[2]);
@@ -17,7 +17,7 @@ module.exports = {
 			}
 			else if (args[0] === 'list') {
 				var whiteListed = msg.guild.channels.filter(channel => {
-					return guild.channels[args[1]].includes(channel.id);
+					return (guild.channels[args[1]].includes(channel.id));
 				});
 				let printList = [];
 				for (let channel of whiteListed) {
