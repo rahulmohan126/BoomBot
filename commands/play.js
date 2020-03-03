@@ -1,5 +1,5 @@
 module.exports = {
-	main: async function(bot, msg, youtube) {
+	main: async function (bot, msg, youtube) {
 
 		const Entities = require('html-entities').AllHtmlEntities;
 		const entities = new Entities();
@@ -18,7 +18,7 @@ module.exports = {
 			bot.sendNotification('That voice channel is not permitted', 'error', msg);
 			return;
 		}
-		
+
 
 		const permissions = voiceChannel.permissionsFor(msg.client.user);
 
@@ -31,7 +31,7 @@ module.exports = {
 			return;
 		}
 
-		if (url.match( /^.*(youtu.be\/|list=)([^#\&\?]*).*/)) {
+		if (url.match(/^.*(youtu.be\/|list=)([^#\&\?]*).*/)) {
 			const playlist = await youtube.getPlaylist(url);
 			const videos = await playlist.getVideos();
 			for (const video of Object.values(videos)) {
@@ -54,7 +54,7 @@ __**Song selection:**__
 ${videos.map(video => `**${++index} -** ${entities.decode(video.title)}`).join('\n')}
 
 Please provide a value to select one of the search results ranging from 1-10.
-					`).then(async function(optionsMsg) {
+					`).then(async function (optionsMsg) {
 						try {
 							var response = await msg.channel.awaitMessages(indexMsg => indexMsg.content > 0 && indexMsg.content < 11, {
 								maxMatches: 1,
@@ -63,7 +63,7 @@ Please provide a value to select one of the search results ranging from 1-10.
 							});
 						}
 						catch (err) {
-							return bot.sendNotification('No or invalid value entered, cancelling video selection.', 'error', msg);
+							return (bot.sendNotification('No or invalid value entered, cancelling video selection.', 'error', msg));
 						}
 
 						optionsMsg.delete();
@@ -73,7 +73,7 @@ Please provide a value to select one of the search results ranging from 1-10.
 				}
 				catch (err) {
 					console.error(err);
-					return bot.sendNotification('🆘 I could not obtain any search results.', 'error', msg);
+					return (bot.sendNotification('🆘 I could not obtain any search results.', 'error', msg));
 				}
 			}
 			if (video === undefined) return;
