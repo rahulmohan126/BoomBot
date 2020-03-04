@@ -111,7 +111,3 @@ New features:
 ## License
 
 MIT License - [LICENSE](LICENSE)
-
-## Contributors
-
-OC - [prgrmr126](https://github.com/prgrmr126)
