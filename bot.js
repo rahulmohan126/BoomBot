@@ -177,8 +177,8 @@ bot.play = function (guild, song) {
 	}
 
 
-	const dispatcher = serverQueue.connection.playStream(ytdl(song.url))
-		.on('end', reason => {
+	const dispatcher = serverQueue.connection.play(ytdl(song.url))
+		.on('finish', reason => {
 			if (reason === 'Stream is not generating quickly enough.') {
 				serverQueue.textChannel.send('Sorry, slow network connection...');
 			}

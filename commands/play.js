@@ -7,14 +7,14 @@ module.exports = {
 		const args = msg.content.split(' ');
 		const searchString = msg.content;
 		const url = args[0] ? args[0].replace(/<(.+)>/g, '$1') : '';
-		const voiceChannel = msg.member.voiceChannel;
+		const voiceChannel = msg.member.voice.channel;
 		const guildVoiceChannels = bot.getGuild(msg.guild.id).channels.voice;
 
 		if (!voiceChannel) {
 			bot.sendNotification('Voice channel required in order to start playing music', 'error', msg);
 			return;
 		}
-		else if (guildVoiceChannels.length > 0 ? !guildVoiceChannels.includes(msg.member.voiceChannel.id) : false) {
+		else if (guildVoiceChannels.length > 0 ? !guildVoiceChannels.includes(msg.member.voice.channel.id) : false) {
 			bot.sendNotification('That voice channel is not permitted', 'error', msg);
 			return;
 		}
