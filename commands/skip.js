@@ -1,8 +1,8 @@
 module.exports = {
-	main: function(bot, msg) {
+	main: function (bot, msg) {
 		const serverQueue = bot.queue.get(msg.guild.id);
 
-		if (!msg.member.voiceChannel) {
+		if (!msg.member.voice.channel) {
 			bot.sendNotification('You are not in a voice channel!', 'error', msg);
 		}
 		else if (!serverQueue) {
