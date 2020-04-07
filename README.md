@@ -23,13 +23,13 @@ Put all ids/tokens/keys in between the quotation marks.
 
 ### Creating a Bot
 
-Login to your discord account and go to [this](https://discordapp.com/developers/applications/) link. Select "new application" and input a name. Once application is created, copy the **client id** from General Information. Then select bot on the left and select "add bot" and confirm (you may need to change your application name in general information if too many users have this username). Once bot is added, in the bot menu, select "click to reveal token" to get the **client token**.
+Login to your discord account and go to [this](https://discordapp.com/developers/applications/) link. Select "new application" and input a name. Once the application is created, copy the **client id** from General Information. Then select bot on the left and select "add bot" and confirm (you may need to change your application name in general information if too many users have this username). Once the bot is added, in the bot menu, select "click to reveal token" to get the **client token**.
 
-In order to get your id, open up the discord app, go to settings -> appearence, then scroll down to Developer Mode and toggle it on. Then go to a server that you are in and find yourself in the member list and right click. "Copy ID" should show up, click it and **your id** will autmatically be copied to your clipboard.
+To get your id, open up the discord app, go to settings -> appearance, then scroll down to Developer Mode and toggle it on. Then go to a server that you are in and find yourself in the member list and right-click. "Copy ID" should show up, click it and **your id** will automatically be copied to your clipboard.
 
 **Your prefix** is up to you to choose, preferably pick something short and uncommon to start a message with such as "?".
 
-For your api key, go to [this](https://developers.google.com/youtube/v3/getting-started) link and follow instructions 1-3 (make sure to create an unrestricted key). Then go to [this](https://console.developers.google.com/) link and go to the Credentials menu, under API keys, you should see the key you created, copy the **key** and paste it into your settings.json
+For your API key, go to [this](https://developers.google.com/youtube/v3/getting-started) link and follow instructions 1-3 (make sure to create an unrestricted key). Then go to [this](https://console.developers.google.com/) link and go to the Credentials menu, under API keys, you should see the key you created, copy the **key** and paste it into your settings.json
 
 :warning: DO NOT SHARE YOUR API KEY OR CLIENT TOKEN WITH ANYONE :warning:
 
@@ -96,17 +96,36 @@ Commands include:
 * `volume (1-10)` *no volume input will display the current volume*
 
 Features:
-Play and control music on a single or multiple servers.
+Play and control music on a single server or multiple servers.
 
 ### v1.1.0
 New commands:
-* `prefix (prefix)`
-* `channel [add | remove | list] [voice | text] [channel name]` *the last argument is not required while using list*
-* More embedded notifications
+* `prefix (prefix)` **[OWNER COMMAND]**
+* `channel [add | remove | list] [voice | text] [channel name]` *the last argument is not required while using list* **[OWNER COMMAND]**
 
 New features:
+* More embedded notifications
 * Server changeable prefix
 * Selectable text/voice channels. If no text or voice channels are selected to be open, all of them will be open.
+
+### v1.2.0
+New or edited commands:
+* `channel [voice | text] (channel name | all)` *the last argument is only required when changing designated channels* **[OWNER COMMAND]**
+* `loop` Loops the song.
+* `seek [time]` Skips to the desired time of the song. Example "seek 1h 5m 3s".
+* `invite` Gives the invite URL so others can add the bot to there server.
+
+New or improved features:
+* Channel commands have simplified to one voice/text channel or all of them. As opposed to having multiple allowed/disallowed channels. This was for the sake of practicality and simplicity.
+* Reduced lag in audio playing by increasing RAM usage
+* More detailed console logs
+* More embed notifications
+* Volume floors and ceilings can now be set in volume.js. This sets the volume floor/ceiling for ALL servers.
+* More general updates to fix bugs caused by the upgrade to discord.js v12.
+
+Other:
+* Fixed some typos in the README.
+* More code formatting and cleanup.
 
 ## License
 
