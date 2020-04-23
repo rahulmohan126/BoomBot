@@ -32,6 +32,8 @@ bot.queue = new Map();
 bot.escapeMarkdown = Discord.Util.escapeMarkdown;
 bot.DETAILED_LOGGING = true;
 
+//#region ---------	  Formatting	---------
+// Creates table logs for better viewing.
 bot.log = {
 	'audioStreamDisconnected': function (msg) {
 		console.table({
@@ -103,7 +105,9 @@ bot.sendNotification = function (info, code, msg, fields = [], header = null, ot
 
 	msg.channel.send('', { embed });
 };
+//#endregion
 
+//#region ---------		Music		---------
 // Converts YouTube duration (string) to seconds (number)
 bot.stringToTime = function (duration) {
 	const letter = ['S', 'M', 'H'];
@@ -214,7 +218,7 @@ bot.handleVideo = async function (video, msg, voiceChannel, playlist = false) {
 				},
 				{
 					name: "Requested By",
-					value: "`Mr. Perkins`"
+					value: `\`${msg.member.displayName}\``
 				}
 			], 'Added to queue', {
 				title: song.title,
@@ -232,7 +236,7 @@ bot.play = function (guild, song, seek = 0) {
 	if (!song) {
 		if (bot.DETAILED_LOGGING) console.error(`Guild: ${serverQueue.textChannel.guild.name} ` +
 			`(${serverQueue.textChannel.guild.id}) | Audio Disconnection: End of queue`);
-		serverQueue.voiceChannel.leave();
+		serverQueue.voice.channel.leave();
 		bot.queue.delete(guild.id);
 		return;
 	}
@@ -275,7 +279,9 @@ bot.play = function (guild, song, seek = 0) {
 	//else song.startTime = Date.now();
 	// return song;
 };
+//#endregion
 
+//#region ---------	   Database		---------
 // Gets a guild config from id
 bot.getGuild = function (guildID) {
 	// In case bot guild has been deleted or not created yet
@@ -297,6 +303,7 @@ bot.saveConfig = function () {
 	console.log('Config: Reloaded')
 	fs.writeFileSync(`${__dirname}/guild.json`, JSON.stringify(bot.db, null, 4));
 };
+//#endregion
 
 //#endregion
 //#region  ---------------------	Commands	---------------------
@@ -360,7 +367,6 @@ commands.reload.main = function (bot, msg) {
 	if (msg.author.id === bot.OWNERID) {
 		try {
 			if (commands[command]) {
-
 				var directory = `${__dirname}/commands/${command}.js`;
 				delete commands[command];
 				delete require.cache[require.resolve(directory)];
