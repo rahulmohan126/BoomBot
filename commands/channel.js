@@ -11,7 +11,7 @@ module.exports = {
 
 			if (selectedChannel === undefined) throw new Error();
 
-			if (channelName !== undefined && msg.author.id === msg.guild.ownerID) {
+			if (channelName !== undefined && (msg.author.id === msg.guild.ownerID || msg.roles.cache.has(guild.dj))) {
 				if (args[1] === 'all') {
 					guild[args[0] + 'Channel'] = ''
 				}
