@@ -14,8 +14,8 @@ module.exports = {
 			bot.sendNotification(`The current volume is: **${serverQueue.volume}**`, 'info', msg);
 		}
 		else {
-			// Setting the volume floor will allow users to mute the bot for everyone.
-			const VOLUME_FLOOR = 0;
+			// Setting the volume floor to 0 will allow users to server mute the bot.
+			const VOLUME_FLOOR = 1;
 			const VOLUME_CEILING = 10;
 
 			arg = arg <= VOLUME_FLOOR ? VOLUME_FLOOR : arg;

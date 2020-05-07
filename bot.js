@@ -289,7 +289,8 @@ bot.getGuild = function (guildID) {
 		bot.db[guildID] = {
 			prefix: '.',
 			textChannel: '',
-			voiceChannel: ''
+			voiceChannel: '',
+			instant: false,
 		};
 
 		bot.saveConfig();
@@ -312,76 +313,129 @@ var commands = {};
 
 // BASE COMMANDS (cannot be reloaded)
 
-commands.help = {};
-commands.help.hide = true;
-commands.help.main = function (bot, msg) {
+commands.help = {
+	hide: true,
+	main: function (bot, msg) {
 
-	const GUILD_PREFIX = bot.getGuild(msg.guild.id).prefix;
-
-	if (msg.content === '') {
-		var cmds = [];
-
-		for (let command in commands) {
-			if (!commands[command].hide) {
-				cmds.push(command);
+		const GUILD_PREFIX = bot.getGuild(msg.guild.id).prefix;
+	
+		if (msg.content === '') {
+			var cmds = [];
+	
+			for (let command in commands) {
+				if (!commands[command].hide) {
+					cmds.push(command);
+				}
 			}
-		}
-
-		cmds = cmds.join(', ');
-
-		bot.sendNotification(`Bot prefix: ${GUILD_PREFIX}`, 'info', msg, [
-			{
-				name: 'Commands: ',
-				value: cmds,
-				inline: true
-			}
-		]);
-	}
-	else {
-		let command = msg.content;
-
-		if (commands[command]) {
-
-			bot.sendNotification(`Bot prefix: ${GUILD_PREFIX} | Command: ${command}`, 'info', msg, [
+	
+			cmds = cmds.join(', ');
+	
+			bot.sendNotification(`Bot prefix: ${GUILD_PREFIX}`, 'info', msg, [
 				{
-					name: 'Description: ',
-					value: commands[command].help,
-				},
-				{
-					name: 'Usage: ',
-					value: GUILD_PREFIX + commands[command].usage,
+					name: 'Commands: ',
+					value: cmds,
+					inline: true
 				}
 			]);
 		}
 		else {
-			bot.sendNotification('That command does not exist', 'error', msg);
+			let command = msg.content;
+	
+			if (commands[command]) {
+	
+				bot.sendNotification(`Bot prefix: ${GUILD_PREFIX} | Command: ${command}`, 'info', msg, [
+					{
+						name: 'Description: ',
+						value: commands[command].help,
+					},
+					{
+						name: 'Usage: ',
+						value: GUILD_PREFIX + commands[command].usage,
+					}
+				]);
+			}
+			else {
+				bot.sendNotification('That command does not exist', 'error', msg);
+			}
+		}
+	}
+}
+
+commands.reload = {
+	hide: true,
+	main: function (bot, msg) {
+		let command = msg.content.split(' ')[0];
+	
+		if (msg.author.id === bot.OWNERID) {
+			try {
+				if (commands[command]) {
+					var directory = `${__dirname}/commands/${command}.js`;
+					delete commands[command];
+					delete require.cache[require.resolve(directory)];
+					commands[command] = require(directory);
+					bot.sendNotification(`Reloaded ${command} command successfully.`, 'success', msg);
+	
+					if (bot.DETAILED_LOGGING) console.log(`Command: "${command}" | Status: Reloaded`);
+				}
+			}
+			catch (err) {
+				bot.sendNotification('Command not found', 'error', msg);
+			}
+		}
+		else {
+			bot.sendNotification('You do not have permission to use this command.', 'error', msg);
 		}
 	}
 };
 
-commands.reload = {};
-commands.reload.hide = true;
-commands.reload.main = function (bot, msg) {
-	let command = msg.content.split(' ')[0];
-
-	if (msg.author.id === bot.OWNERID) {
-		try {
-			if (commands[command]) {
-				var directory = `${__dirname}/commands/${command}.js`;
-				delete commands[command];
-				delete require.cache[require.resolve(directory)];
-				commands[command] = require(directory);
-				bot.sendNotification(`Reloaded ${command} command successfully.`, 'success', msg);
-
-				if (bot.DETAILED_LOGGING) console.log(`Command: "${command}" | Status: Reloaded`);
+commands.load = {
+	hide: true,
+	main: function (bot, msg) {
+		let command = msg.content.split(' ')[0];
+	
+		if (msg.author.id === bot.OWNERID) {
+			try {
+				if (!commands[command]) {
+					var directory = `${__dirname}/commands/${command}.js`;
+					commands[command] = require(directory);
+					bot.sendNotification(`Loaded ${command} command successfully.`, 'success', msg);
+	
+					if (bot.DETAILED_LOGGING) console.log(`Command: "${command}" | Status: Loaded`);
+				}
+			}
+			catch (err) {
+				bot.sendNotification('Command not found', 'error', msg);
 			}
 		}
-		catch (err) {
-			bot.sendNotification('Command not found', 'error', msg);
+		else {
+			bot.sendNotification('You do not have permission to use this command.', 'error', msg);
 		}
 	}
-	else {
-		bot.sendNotification('You do not have permission to use this command.', 'error', msg);
+};
+
+commands.unload = {
+	hide: true,
+	main: function (bot, msg) {
+		let command = msg.content.split(' ')[0];
+	
+		if (msg.author.id === bot.OWNERID) {
+			try {
+				if (commands[command]) {
+					var directory = `${__dirname}/commands/${command}.js`;
+					delete commands[command];
+					delete require.cache[require.resolve(directory)];
+					bot.sendNotification(`Unloaded ${command} command successfully.`, 'success', msg);
+	
+					if (bot.DETAILED_LOGGING) console.log(`Command: "${command}" | Status: Unloaded`);
+				}
+			}
+			catch (err) {
+				bot.sendNotification('Command not found', 'error', msg);
+			}
+		}
+		else {
+			bot.sendNotification('You do not have permission to use this command.', 'error', msg);
+		}
 	}
 };
 
