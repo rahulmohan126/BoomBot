@@ -89,7 +89,7 @@ To terminate the bot just type stop into the shell and enter.
 * `stop`
 * `volume (1-10)` *no volume input will display the current volume*
 * `prefix (prefix)` **Admin command**
-* `channel [voice | text] (channel name | all)` *the last argument is only required when changing designated channels* **admin command**
+* `channel [voice | text] (channel name | all)` *the last argument is only required when changing designated channels* **Admin command**
 * `loop` Loops the song.
 * `seek [time]` Skips to the desired time of the song. Example "seek 1h 5m 3s".
 * `invite` Gives the invite URL so others can add the bot to their server.
