@@ -77,14 +77,8 @@ node path/to/bot.js
 ````
 To terminate the bot just type stop into the shell and enter.
 
-## Versions
+### Commands
 
-() => optional parameter
-
-[] => required parameter
-
-### v1.0.0
-Commands include:
 * `np` *now playing*
 * `pause`
 * `ping`
@@ -94,38 +88,11 @@ Commands include:
 * `skip`
 * `stop`
 * `volume (1-10)` *no volume input will display the current volume*
-
-Features:
-Play and control music on a single server or multiple servers.
-
-### v1.1.0
-New commands:
 * `prefix (prefix)` **[OWNER COMMAND]**
-* `channel [add | remove | list] [voice | text] [channel name]` *the last argument is not required while using list* **[OWNER COMMAND]**
-
-New features:
-* More embedded notifications
-* Server changeable prefix
-* Selectable text/voice channels. If no text or voice channels are selected to be open, all of them will be open.
-
-### v1.2.0
-New or edited commands:
 * `channel [voice | text] (channel name | all)` *the last argument is only required when changing designated channels* **[OWNER COMMAND]**
 * `loop` Loops the song.
 * `seek [time]` Skips to the desired time of the song. Example "seek 1h 5m 3s".
-* `invite` Gives the invite URL so others can add the bot to there server.
-
-New or improved features:
-* Channel commands have simplified to one voice/text channel or all of them. As opposed to having multiple allowed/disallowed channels. This was for the sake of practicality and simplicity.
-* Reduced lag in audio playing by increasing RAM usage
-* More detailed console logs
-* More embed notifications
-* Volume floors and ceilings can now be set in volume.js. This sets the volume floor/ceiling for ALL servers.
-* More general updates to fix bugs caused by the upgrade to discord.js v12.
-
-Other:
-* Fixed some typos in the README.
-* More code formatting and cleanup.
+* `invite` Gives the invite URL so others can add the bot to their server.
 
 ## License
 
