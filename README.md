@@ -45,37 +45,27 @@ Go to [this](https://nodejs.org/en/download/) link and download the nodejs insta
 Follow the installation steps to get node.js.
 NPM (node package manager) is installed with Node.
 
-#### discord.js
+#### Dependencies and Setup
 
-```
-npm install -g discord.js
-```
-
-#### ytdl-core
-Either use opusscript or node-opus
-
-```
-npm install -g opusscript ytdl-core
-```
-
-or
-
-```
-npm install -g node-opus ytdl-core
-```
-
-#### simple-youtube-api
-
-```
-npm install -g simple-youtube-api
+After downloading node.js and cloning/downloading the project, in your shell, enter the following:
+```bash
+cd path/to/project
+npm install
 ```
 
 ## Usage
 
+````bash
+npm start
 ````
-node path/to/bot.js
-````
-To terminate the bot just type stop into the shell and enter.
+To terminate the bot just type stop into the shell and enter. You can also `reload`, `load`, and `unload` commands. Reloading allows for modified command files (this does not include "bot.js"), to be refreshed without taking the bot offline. Loading and unloading are pretty straightforward (all commands are automatically loaded on bot startup).
+
+Once the bot has been started, to use any command type it into the shell. Example:
+```bash
+reload <primary name> # Command aliases won't work in the reload/load/unload commands.
+
+stop # Safely terminates the bot
+```
 
 ### Commands
 
