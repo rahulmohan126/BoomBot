@@ -1,15 +1,20 @@
 module.exports = {
-	main: function (bot, msg) {
+	main: function (bot, guild, msg) {
 
 		const arg = msg.content.split(' ')[0].trim();
 		
-		if (arg === '') {
-			bot.sendNotification(`The current prefix is: ${msg.guild.member((bot.getGuild(msg.guild.id).dj))}`, 'info', msg);
+		if (arg == '') {
+			if (guild.dj == '') {
+				bot.sendNotification('There is no current DJ role.', 'info', msg);
+			}
+			else {
+				bot.sendNotification(`The current DJ is: ${msg.guild.roles.cache.get(guild.dj)}`, 'info', msg);
+			}
 		}
-		else if (msg.author.id === msg.guild.ownerID) {
-			bot.getGuild(msg.guild.id).dj = arg;
-			bot.saveConfig();
-			bot.sendNotification(`The DJ is in the house!`, 'success', msg);
+		else if (guild.checkPerms(msg.author.id) < 1) {
+			guild.dj = arg.substring(3, arg.length - 1);
+			guild.save();
+			bot.sendNotification(`The ${msg.guild.roles.cache.get(guild.dj)} is in the house!`, 'success', msg);
 		}
 		else {
 			bot.sendNotification('Only the guild owner can assign a DJ.', 'error', msg);

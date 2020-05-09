@@ -1,5 +1,5 @@
 module.exports = {
-	main: function (bot, msg) {
+	main: function (bot, guild, msg) {
 		const start = Date.now();
 		msg.channel.send('Pong!').then(function (msg) {
 			const latency = Date.now() - start;

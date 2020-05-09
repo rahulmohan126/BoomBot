@@ -1,17 +1,16 @@
 module.exports = {
-	main: async function (bot, msg) {
+	main: async function (bot, guild, msg) {
 		const args = msg.content.split(' ');
 		const searchString = msg.content;
 		const url = args[0] ? args[0].replace(/<(.+)>/g, '$1') : '';
 		const voiceChannel = msg.member.voice.channel;
-		const guildVoiceChannel = bot.getGuild(msg.guild.id).voiceChannel;
 
 		// Checks if voice channel is valid (if any)
 		if (!voiceChannel) {
 			bot.sendNotification('Voice channel required in order to start playing music', 'error', msg);
 			return;
 		}
-		else if (guildVoiceChannel !== '' && guildVoiceChannel === voiceChannel.id) {
+		else if (!guild.checkVoiceChannelByID(voiceChannel.id)) {
 			bot.sendNotification('That voice channel is not permitted', 'error', msg);
 			return;
 		}
@@ -32,7 +31,7 @@ module.exports = {
 			const videos = await playlist.getVideos();
 
 			for (const video of Object.values(videos)) {
-				await bot.handleVideo(video, msg, voiceChannel, true);
+				await guild.queue.handleVideo(video, msg, voiceChannel, true);
 			}
 
 			// Sends custom completion message after the entire playlist is loaded.
@@ -42,7 +41,7 @@ module.exports = {
 			// Tries to see if url is a direct video link. If so, handles the video
 			try {
 				var video = await bot.youtube.getVideo(url);
-				await bot.handleVideo(video, msg, voiceChannel).catch(err => console.error(err));
+				await guild.queue.handleVideo(video, msg, voiceChannel).catch(err => console.error(err));
 			}
 			// If not, treats the argument as a search query
 			catch (error) {
@@ -54,17 +53,17 @@ module.exports = {
 					if (videos.length === 0) throw new Error();
 
 					// Sends user the options.
-					let index = 0;
+					let index = 1;
 
 					// TODO Change this into an embed
-					msg.channel.send(`
+					if (!guild.instant) {
+						let selectionMsg = await msg.channel.send(`
 __**Song selection:**__
 
 ${videos.map(video => `**${++index} -** ${bot.escapeMarkdown(video.title)}`).join('\n')}
 
-Please provide a value to select one of the search results ranging from 1-10.
-					`).then(async function (selectionMsg) {
-						// Awaits for user response
+Please provide a value to select one of the search results ranging from 1-10.`);
+
 						try {
 							var response = await msg.channel.awaitMessages(indexMsg =>
 								indexMsg.content > 0 && indexMsg.content < videos.length + 1, {
@@ -79,12 +78,12 @@ Please provide a value to select one of the search results ranging from 1-10.
 
 						// Deletes the selection message and handles the video
 						selectionMsg.delete();
-						var index = response.first().content;
-						await bot.handleVideo(videos[index - 1], msg, voiceChannel).catch(err => console.error(err));
-					});
+						index = response.first().content;
+					}
+
+					guild.queue.handleVideo(videos[index - 1], msg, voiceChannel).catch(err => console.error(err));
 				}
 				catch (err) {
-					console.error(err);
 					return bot.sendNotification('🆘 I could not obtain any search results.', 'error', msg);
 				}
 			}
