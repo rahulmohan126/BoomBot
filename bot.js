@@ -6,525 +6,702 @@ const YouTube = require('simple-youtube-api');
 const fs = require('fs');
 const ytdl = require('ytdl-core');
 const readline = require('readline');
-const bot = new Discord.Client({ autoReconnect: true });
+
+const LOGGING = true;
 //#endregion
-//#region  ---------------------	  Bot		---------------------
+//#region  ---------------------	Classes		---------------------
 
-// Required
-const config = JSON.parse(fs.readFileSync(`${__dirname}/settings.json`));
-bot.ID = config.BOTID;
-bot.OWNERID = config.OWNERID;
-bot.PREFIX = config.PREFIX;
-bot.TOKEN = config.TOKEN;
-bot.GOOGLE_API_KEY = config.GOOGLE_API_KEY;
+class Bot extends Discord.Client {
+	constructor(options, config) {
+		super(options);
 
-// Colors
-bot.COLOR = 0x351C75;
-bot.SUCCESS_COLOR = 0x66bb69;
-bot.ERROR_COLOR = 0xEF5250;
-bot.INFO_COLOR = 0x03A8F4;
+		this.START_TIME = Date.now();
 
-// Other
-bot.youtube = new YouTube(bot.GOOGLE_API_KEY);
-bot.start = startTime;
-bot.db = JSON.parse(fs.readFileSync(`${__dirname}/guild.json`));
-bot.queue = new Map();
-bot.escapeMarkdown = Discord.Util.escapeMarkdown;
-bot.DETAILED_LOGGING = true;
+		this.ID = config.BOTID;
+		this.OWNERID = config.OWNERID;
+		this.PREFIX = config.PREFIX;
+		this.TOKEN = config.TOKEN;
+		this.GOOGLE_API_KEY = config.GOOGLE_API_KEY;
 
-//#region ---------	  Formatting	---------
-// Creates table logs for better viewing.
-bot.log = {
-	'audioStreamDisconnected': function (msg) {
-		console.table({
-			Item: { Value: 'AudioStream' },
-			Status: { Value: 'Stream disconnected' },
-			Size: { Value: bot.queue.size },
-			Guild: { Value: msg.guild.name, Id: msg.guild.id }
-		}, ['Value', 'Id']);
-	},
-	'audioStreamConnected': function (msg) {
-		console.table({
-			Item: { Value: 'AudioStream' },
-			Status: { Value: 'Stream connected' },
-			Size: { Value: bot.queue.size },
-			Guild: { Value: msg.guild.name, Id: msg.guild.id }
-		}, ['Value', 'Id']);
-	},
-	'commandMsg': function (msg, command) {
-		console.table({
-			Item: { Value: 'Message' },
-			Guild: { Value: msg.guild.name, Id: Number(msg.guild.id) },
-			Author: { Value: msg.member.displayName, Id: Number(msg.author.id) },
-			Content: { Value: msg.content, Id: Number(msg.id) },
-			Command: { Value: command }
-		}, ['Value', 'Id']);
+		this.COLORS = {
+			DEFAULT: 0x351C75,
+			SUCCESS: 0x66bb69,
+			ERROR: 0xEF5250,
+			INFO: 0x03A8F4
+		}
+
+		this.youtube = new YouTube(this.GOOGLE_API_KEY);
+		this.database = new Map();
+		this.commands = [];
+
+		// This dictionary redirects to commands (including aliases)
+		this.commandDict = {}
+
+		this.escapeMarkdown = Discord.Util.escapeMarkdown;
+
+		this.log = {
+			'audioStreamDisconnected': function (msg) {
+				console.table({
+					Item: { Value: 'AudioStream' },
+					Status: { Value: 'Stream disconnected' },
+					// Size: { Value: bot.queue.size },
+					Guild: { Value: msg.guild.name, Id: msg.guild.id }
+				}, ['Value', 'Id']);
+			},
+			'audioStreamConnected': function (msg) {
+				console.table({
+					Item: { Value: 'AudioStream' },
+					Status: { Value: 'Stream connected' },
+					// Size: { Value: bot.queue.size },
+					Guild: { Value: msg.guild.name, Id: msg.guild.id }
+				}, ['Value', 'Id']);
+			},
+			'commandMsg': function (msg, command) {
+				console.table({
+					Item: { Value: 'Message' },
+					Guild: { Value: msg.guild.name, Id: Number(msg.guild.id) },
+					Author: { Value: msg.member.displayName, Id: Number(msg.author.id) },
+					Content: { Value: msg.content, Id: Number(msg.id) },
+					Command: { Value: command }
+				}, ['Value', 'Id']);
+			}
+		}
+	}
+
+	/**
+	 * Loads all the guild datas
+	 */
+	loadGuilds() {
+		let jsonInfo = JSON.parse(fs.readFileSync(`${__dirname}/guild.json`));
+
+		for (let guild of this.guilds.cache.values()) {
+			if (guild.id in jsonInfo) {
+				this.database.set(guild.id, new Guild(this, guild, jsonInfo[guild.id]));
+			}
+			else {
+				this.database.set(guild.id, new Guild(guild));
+			}
+		}
+
+	}
+
+	/**
+	 * Loads all the bot commands
+	 */
+	loadCommands() {
+
+		let currentCommand = new Command('help', {
+			hide: true,
+			main: function (bot, msg) {
+
+				const GUILD_PREFIX = bot.getGuild(msg.guild).prefix;
+
+				if (msg.content === '') {
+					var cmds = [];
+
+					for (let command in bot.commands) {
+						if (!command.hide) {
+							cmds.push(command);
+						}
+					}
+
+					cmds = cmds.join(', ');
+
+					bot.sendNotification(`Bot prefix: ${GUILD_PREFIX}`, 'info', msg, [
+						{
+							name: 'Commands: ',
+							value: cmds,
+							inline: true
+						}
+					]);
+				}
+				else {
+					let command = msg.content;
+
+					if (commands[command]) {
+
+						bot.sendNotification(`Bot prefix: ${GUILD_PREFIX} | Command: ${command}`, 'info', msg, [
+							{
+								name: 'Description: ',
+								value: commands[command].help,
+							},
+							{
+								name: 'Usage: ',
+								value: GUILD_PREFIX + commands[command].usage,
+							}
+						]);
+					}
+					else {
+						bot.sendNotification('That command does not exist', 'error', msg);
+					}
+				}
+			}
+		});
+
+		this.commands.push(currentCommand);
+		this.commandDict['help'] = currentCommand;
+
+		var files = fs.readdirSync(`${__dirname}/commands/`);
+
+		for (let file of files) {
+			if (file.endsWith('.js')) {
+				let fileName = file.slice(0, -3);
+				try {
+					this.loadCommand(fileName);
+
+					if (LOGGING) console.table({ Command: fileName, Status: 'Loaded' });
+				} catch (error) {
+					console.log(error);
+					if (LOGGING) console.table({ Command: fileName, Status: 'Failed to load' });
+				}
+			}
+		}
+
+		console.log('———— All Commands Loaded! ————');
+	}
+
+	/**
+	 * Unloads a command indentified by its primary name
+	 * @param {String} name Command name
+	 */
+	unloadCommand(name) {
+		const directory = `${__dirname}/commands/${name}.js`
+
+		let command = this.commands.find(command => command.name == name);
+
+		if (!command) {
+			console.error('Command not found');
+			return false;
+		}
+
+		// Removes the command from the list
+		this.commands = this.commands.filter(command => command.name != name);
+
+		delete this.commandDict[name];
+
+		// Deletes the command from the dict
+		if (command.keywords !== undefined) {
+			command.keywords.forEach(keyword => {
+				delete this.commandDict[keyword];
+			});
+		}
+
+		// Deletes the command at source and the cache
+		command = null;
+		delete require.cache[require.resolve(directory)];
+
+		return true;
+	}
+
+	/**
+	 * Loads a command indentified by its primary name
+	 * @param {String} name Command name
+	 */
+	loadCommand(name) {
+		try {
+			const directory = `${__dirname}/commands/${name}.js`
+
+			let command = new Command(name, require(directory));
+
+			bot.commands.push(command);
+
+			this.commandDict[name] = command;
+
+			if (command.keywords !== undefined) {
+				for (let keyword of command.keywords) {
+					this.commandDict[keyword] = command;
+				}
+			}
+
+			return true;
+		}
+		catch (err) {
+			return false;
+		}
+	}
+
+	/**
+	 * Runs a command from a m
+	 * @param {Command} command 
+	 * @param {Guild} guild 
+	 * @param {Discord.Message} msg 
+	 */
+	runCommand(command, guild, msg) {
+		this.commandDict[command].main(this, guild, msg);
+	}
+
+	/**
+	 * Get
+	 * @param {Discord.Guild} guild 
+	 * @returns {Guild}
+	 */
+	getGuild(guild) {
+		if (!this.database.has(guild.id)) {
+			this.database.set(guild.id, new Guild(this, guild));
+			this.save();
+		}
+
+		return this.database.get(guild.id);
+	}
+
+	/**
+	 * Sends a embed notification from the bot.
+	 */
+	sendNotification(info, code, msg, fields = [], header = null, other = {}) {
+		var color;
+
+		if (code === 'success') color = this.COLORS.SUCCESS;
+		else if (code === 'error') color = this.COLORS.ERROR;
+		else if (code === 'info') color = this.COLORS.INFO;
+		else color = this.COLORS.DEFAULT;
+
+		let embed = {
+			color: color,
+			timestamp: Date(Date.now()),
+			fields: fields,
+		};
+
+		if (info !== '') {
+			embed.description = info;
+		}
+
+		if (header && msg.member) {
+			embed.author = {
+				name: header,
+				iconURL: msg.member.user.displayAvatarURL()
+			}
+
+			embed.footer = {
+				text: msg.member.displayName,
+				iconURL: msg.member.user.displayAvatarURL()
+			}
+		}
+		else if (msg.member) {
+			embed.author = {
+				name: msg.member.displayName,
+				iconURL: msg.member.user.displayAvatarURL()
+			}
+		}
+
+		if (other) {
+			Object.assign(embed, other);
+		}
+
+		msg.channel.send('', { embed });
+	}
+
+	/**
+	 * Exports the databse in JSON format
+	 */
+	save() {
+		let jsonDatabase = {}
+
+		for (let guildID of this.database.keys()) {
+			jsonDatabase[guildID] = this.database.get(guildID).json();
+		}
+
+		fs.writeFileSync(`${__dirname}/guild.json`, JSON.stringify(jsonDatabase, null, 4));
+	}
+
+	/**
+	 * Initializes the bot
+	 */
+	start() {
+		this.loadGuilds();
+		this.loadCommands();
 	}
 }
 
-// Creates in embed notification
-bot.sendNotification = function (info, code, msg, fields = [], header = null, other = {}) {
-	var color;
+class Guild {
+	constructor(client, data, info = {
+		prefix: client.PREFIX,
+		textChannel: '',
+		voiceChannel: '',
+		dj: '',
+		instant: false
+	}) {
+		Object.assign(this, data);
 
-	if (code === 'success') color = bot.SUCCESS_COLOR;
-	else if (code === 'error') color = bot.ERROR_COLOR;
-	else if (code === 'info') color = bot.INFO_COLOR;
-	else color = bot.COLOR;
+		this.client = client;
 
-	let embed = {
-		color: color,
-		timestamp: Date(Date.now()),
-		fields: fields,
-	};
+		this.prefix = info.prefix;
+		this.textChannel = info.textChannel;
+		this.voiceChannel = info.voiceChannel;
+		this.dj = info.dj;
+		this.instant = info.instant;
 
-	if (info !== '') {
-		embed.description = info;
+		this.queue = new MusicQueue(this.client);
 	}
 
-	if (header && msg.member) {
-		embed.author = {
-			name: header,
-			iconURL: msg.member.user.displayAvatarURL()
+	/**
+	 * Checks the command permissions of the member
+	 * @param {Discord.GuildMemberResolvable} memberResolvable 
+	 */
+	checkPerms(memberResolvable) {
+		// 0 => All perms
+		// 1 => Most perms
+		// 2 => Basic perms
+
+		var user = this.members.guild.member(memberResolvable);
+
+		if (this.ownerID == user.id) {
+			return 0;
+		}
+		else if (this.dj != '' && user.roles.cache.has(this.dj)) {
+			return 1;
+		}
+		else {
+			return 2;
+		}
+	}
+
+	/**
+	 * Checks if the text channel is the one permitted by the guild
+	 * @param {Discord.Snowflake} channelID
+	 */
+	checkTextChannelByID(channelID) {
+		return this.textChannel == '' ? true : this.textChannel == channelID;
+	}
+
+	/**
+	 * Checks if the voice channel is the one permitted by the guild
+	 * @param {Discord.Snowflake} channelID
+	 */
+	checkVoiceChannelByID(channelID) {
+		return this.voiceChannel == '' ? true : this.voiceChannel == channelID;
+	}
+
+	/**
+	 * Checks the validity of a message
+	 * @param {Discord.Message} msg 
+	 */
+	validMessage(msg) {
+		return (this.checkTextChannelByID(msg.channel.id) ||
+			this.checkPerms(msg.member) < 2) && (msg.content.startsWith(this.prefix) || msg.content.startsWith(`<@!${this.client.ID}>`));
+	}
+
+	/**
+	 * Removed the prefix or bot mention from the start of the message
+	 * @param {Discord.Message} msg 
+	 */
+	extractCommand(msg) {
+		if (msg.content.startsWith(this.prefix)) {
+			msg.content = msg.content.replace(this.prefix, '').trimLeft();
+		}
+		else if (msg.content.startsWith(`<@!${this.client.ID}>`)) {
+			msg.content = msg.content.replace(`<@!${this.client.ID}>`, '').trimLeft();
 		}
 
-		embed.footer = {
-			text: msg.member.displayName,
-			iconURL: msg.member.user.displayAvatarURL()
-		}
-	}
-	else if (msg.member) {
-		embed.author = {
-			name: msg.member.displayName,
-			iconURL: msg.member.user.displayAvatarURL()
-		}
+		const command = msg.content.split(' ')[0].toLowerCase();
+		msg.content = msg.content.replace(command, '').trimLeft();
+
+		return command;
 	}
 
-	if (other) {
-		Object.assign(embed, other);
-	}
-
-	msg.channel.send('', { embed });
-};
-//#endregion
-
-//#region ---------		Music		---------
-// Converts YouTube duration (string) to seconds (number)
-bot.stringToTime = function (duration) {
-	const letter = ['S', 'M', 'H'];
-	const value = [1, 60, 3600];
-	const durationComponents = duration.slice(2).split(/(.+?[A-Z])/g);
-
-	var time = 0;
-
-	durationComponents.forEach(element => {
-		if (element != '') {
-			time += parseInt(element.slice(0, element.length - 1)) * value[letter.indexOf(element[element.length - 1])];
-		}
-	});
-	return time * 1000;
-};
-
-// Returns formatted time string
-bot.timeToString = function (epochTime) {
-	var returnStr = new Date(epochTime).toUTCString().split(' ')[4];
-
-	// Removes hour section if not necessary
-	if (returnStr.startsWith('00:')) {
-		returnStr = returnStr.substring(3);
-	}
-
-	return returnStr;
-};
-
-// Returns the total time of all the songs in a server queue
-bot.totalQueueLength = function (serverMap) {
-	var totalTime = serverMap.songs.reduce((acc, cur) => acc + cur.duration, 0);
-	totalTime -= Date.now() - serverMap.songs[0].startTime; // Accounts for the already completed portion of song
-	return totalTime;
-};
-
-// Handles video requests from play command
-bot.handleVideo = async function (video, msg, voiceChannel, playlist = false) {
-	// Handles video exception
-	if (video.description === 'This video is unavailable.' || video.description === 'This video is private.') {
-		return;
-	}
-
-	const serverQueue = bot.queue.get(msg.guild.id);
-
-	// Creates a "song"
-	video = await bot.youtube.getVideoByID(video.id);
-	const song = {
-		id: video.id,
-		title: Discord.Util.escapeMarkdown(video.title),
-		url: `https://www.youtube.com/watch?v=${video.id}`,
-		thumbnail: video.thumbnails.default.url,
-		duration: bot.stringToTime(video.raw.contentDetails.duration),
-		startTime: -1, // Song has not started yet
-		requestedBy: msg.member
-	};
-
-	if (!serverQueue) {
-		// Creates the server construct if necessary and then adds the song
-		const queueConstruct = {
-			textChannel: msg.channel,
-			voiceChannel: voiceChannel,
-			connection: null,
-			songs: [],
-			volume: 5,
-			playing: true,
-			loop: false,
-			seeking: false
+	/**
+	 * Gets the guild data in JSON
+	 */
+	json() {
+		return {
+			prefix: this.prefix,
+			textChannel: this.textChannel,
+			voiceChannel: this.voiceChannel,
+			dj: this.dj,
+			instant: this.instant
 		};
-
-		bot.queue.set(msg.guild.id, queueConstruct);
-
-		queueConstruct.songs.push(song);
-
-		// Joins channel and handles all exceptions
-		try {
-			queueConstruct.connection = await voiceChannel.join();
-
-			bot.log['audioStreamConnected'](msg);
-
-			queueConstruct.connection.on('disconnect', () => {
-				bot.queue.delete(msg.guild.id);
-				bot.log['audioStreamDisconnected'](msg);
-			})
-
-			// queueConstruct.songs[0] = bot.play(msg.guild, queueConstruct.songs[0]);
-			bot.play(msg.guild, queueConstruct.songs[0]);
-		} catch (err) {
-			console.log(err);//bot.sendNotification('Could not join voice channel', 'error', msg);
-		}
-	} else {
-		serverQueue.songs.push(song);
-
-		// Playlists do not load per message but instead loads the entire playlist and responds with is own
-		// custom message as shown in play.js.
-		if (!playlist) {
-			bot.sendNotification('', 'success', {
-				'channel': serverQueue.textChannel, 'member': song.requestedBy
-			}, [
-				{
-					name: "Duration",
-					value: `\`${bot.timeToString(song.duration)}\``,
-					inline: true
-				},
-				{
-					name: "Time Until Played",
-					value: `\`${bot.timeToString(bot.totalQueueLength(serverQueue) - song.duration)}\``,
-					inline: true
-				},
-				{
-					name: "Requested By",
-					value: `\`${msg.member.displayName}\``
-				}
-			], 'Added to queue', {
-				title: song.title,
-				thumbnail: { url: song.thumbnail },
-				url: song.url
-			});
-		}
-	}
-};
-
-// Plays stream of first video in server map
-bot.play = function (guild, song, seek = 0) {
-	const serverQueue = bot.queue.get(guild.id);
-
-	if (!song) {
-		if (bot.DETAILED_LOGGING) console.error(`Guild: ${serverQueue.textChannel.guild.name} ` +
-			`(${serverQueue.textChannel.guild.id}) | Audio Disconnection: End of queue`);
-		serverQueue.voice.channel.leave();
-		bot.queue.delete(guild.id);
-		return;
 	}
 
-	// 1024 = 1 KB, 1024 x 1024 = 1MB. The highWaterMark determines how much of the stream will be preloaded.
-	// Dedicating more memory will make streams more smoother but can be cause issues on machines with low RAM
-	// and a large highWaterMark. The amount of RAM is per audio stream
-	const dispatcher = serverQueue.connection.play(ytdl(song.url, {
-		quality: 'highestaudio', highWaterMark: 1024 * 1024 * 2
-	}), { seek: seek });
+	/**
+	 * Saves the guild config
+	 */
+	save() {
+		this.client.save();
+	}
+}
 
-	dispatcher.on('start', () => {
-		if (seek !== 0) song.startTime = Date.now() - (seek * 1000);
-		else song.startTime = Date.now();
-	})
+class Command {
+	constructor(commandName, command) {
+		this.name = commandName;
+		this.main = command.main;
+		this.keywords = command.keywords;
+		this.usage = command.usage;
+		this.hide = command.hide ? true : false;
+	}
+}
 
-	dispatcher.on('finish', () => {
-		if (serverQueue.seeking) {
-			serverQueue.seeking = false; // Flip it back
+class MusicQueue {
+	constructor(client) {
+		// Channels to send data to
+		this.client = client;
+
+		this.text = null;
+		this.voice = null;
+
+		// Music informaiton
+		this.connection = null;
+		this._volume = 5;
+		this.songs = [];
+
+		// Status information
+		this.playing = false;
+		this.looping = false;
+		this.seeking = false;
+
+		this.inUse = false;
+	}
+
+	/**
+	 * Volume getter
+	 */
+	get volume() {
+		return this._volume;
+	}
+
+	/**
+	 * Volume setter. Also changes connection dispatcher volume.
+	 */
+	set volume(volume) {
+		if (this.connection != null) {
+			this._volume = volume;
+			this.connection.dispatcher.setVolumeLogarithmic(volume);
+		}
+	}
+
+	/**
+	 * Starts voice channel connection
+	 */
+	async join() {
+		if (this.voice !== null) {
+			this.inUse = true;
+			this.connection = await this.voice.join();
+		}
+	}
+
+	/**
+	 * Resets music queue to default settings. Except for volume, that remains the same.
+	 */
+	end() {
+		if (this.voice) {
+			this.voice.leave();
+		}
+		this.text = null;
+		this.voice = null;
+
+		this.connection = null;
+		this.songs = [];
+
+		this.playing = false;
+		this.looping = false;
+		this.seeking = false;
+
+		this.inUse = false;
+	}
+
+	/**
+	 * Converts a epoch time into a time string.
+	 * @param {Number} epochTime
+	 * @returns {String}
+	 */
+	timeToString(epochTime) {
+		var returnStr = new Date(epochTime).toUTCString().split(' ')[4];
+
+		// Removes hour section if not necessary
+		if (returnStr.startsWith('00:')) {
+			returnStr = returnStr.substring(3);
+		}
+
+		return returnStr;
+	}
+
+	/**
+	 * Returns the remaining play time of the queue
+	 */
+	get totalTime() {
+		var totalTime = this.songs.reduce((acc, cur) => acc + cur.duration, 0);
+		totalTime -= Date.now() - this.songs[0].startTime;
+		return totalTime;
+	}
+
+	/**
+	 * 
+	 * @param {youtube.Video} video 
+	 * @param {Discord.Message} msg 
+	 * @param {Discord.VoiceChannel} voiceChannel 
+	 * @param {boolean} playlist 
+	 */
+	async handleVideo(video, msg, voiceChannel, playlist = false) {
+		// Handles video exception
+		if (video.description === 'This video is unavailable.' || video.description === 'This video is private.') {
 			return;
 		}
 
-		// Music has been stopped
-		if (bot.queue.get(guild.id) === undefined) return;
+		// Creates a "song"
+		video = await this.client.youtube.getVideoByID(video.id);
+		const song = new Song(video, msg);
 
-		// Plays the next song (if looped, the queue will remian unchanged and continue playing the first item)
-		if (!serverQueue.loop) serverQueue.songs.shift();
-		// song = bot.play(guild, serverQueue.songs[0]);
-		bot.play(guild, serverQueue.songs[0]);
-	});
+		// Joins channel and handles all exceptions
+		try {
+			// Creates connection if not existent.
+			if (!this.connection) {
+				this.text = msg.channel;
+				this.voice = voiceChannel;
+				this.playing = true;
+				await this.join();
 
-	dispatcher.on('error', error => console.error(error));
-	dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
+				this.client.log['audioStreamConnected'](msg);
 
-	bot.sendNotification(`🎶 Start playing: **${song.title}**`, 'success', {
-		'channel': serverQueue.textChannel, 'member': song.requestedBy
-	});
-
-	//if (serverQueue.seeking) song.startTime = Date.now() - (seek * 1000);
-	//else song.startTime = Date.now();
-	// return song;
-};
-//#endregion
-
-//#region ---------	   Database		---------
-// Gets a guild config from id
-bot.getGuild = function (guildID) {
-	// In case bot guild has been deleted or not created yet
-	if (!bot.db[guildID]) {
-		bot.db[guildID] = {
-			prefix: '.',
-			textChannel: '',
-			voiceChannel: '',
-			instant: false,
-		};
-
-		bot.saveConfig();
-	}
-
-	return bot.db[guildID];
-};
-
-// Saves guild config database to file
-bot.saveConfig = function () {
-	console.log('Config: Reloaded')
-	fs.writeFileSync(`${__dirname}/guild.json`, JSON.stringify(bot.db, null, 4));
-};
-//#endregion
-
-//#endregion
-//#region  ---------------------	Commands	---------------------
-
-var commands = {};
-
-// BASE COMMANDS (cannot be reloaded)
-
-commands.help = {
-	hide: true,
-	main: function (bot, msg) {
-
-		const GUILD_PREFIX = bot.getGuild(msg.guild.id).prefix;
-	
-		if (msg.content === '') {
-			var cmds = [];
-	
-			for (let command in commands) {
-				if (!commands[command].hide) {
-					cmds.push(command);
-				}
+				this.connection.on('disconnect', () => {
+					this.end();
+					this.client.log['audioStreamDisconnected'](msg);
+				});
 			}
-	
-			cmds = cmds.join(', ');
-	
-			bot.sendNotification(`Bot prefix: ${GUILD_PREFIX}`, 'info', msg, [
-				{
-					name: 'Commands: ',
-					value: cmds,
-					inline: true
-				}
-			]);
-		}
-		else {
-			let command = msg.content;
-	
-			if (commands[command]) {
-	
-				bot.sendNotification(`Bot prefix: ${GUILD_PREFIX} | Command: ${command}`, 'info', msg, [
+
+			this.songs.push(song);
+
+			if (!playlist) {
+				this.client.sendNotification('', 'success', {
+					'channel': this.text, 'member': song.requestedBy
+				}, [
 					{
-						name: 'Description: ',
-						value: commands[command].help,
+						name: "Duration",
+						value: `\`${this.timeToString(song.duration)}\``,
+						inline: true
 					},
 					{
-						name: 'Usage: ',
-						value: GUILD_PREFIX + commands[command].usage,
+						name: "Time Until Played",
+						value: `\`${this.timeToString(this.totalTime - song.duration)}\``,
+						inline: true
+					},
+					{
+						name: "Requested By",
+						value: `\`${msg.member.displayName}\``
 					}
-				]);
+				], 'Added to queue', {
+					title: song.title,
+					thumbnail: { url: song.thumbnail },
+					url: song.url
+				});
 			}
-			else {
-				bot.sendNotification('That command does not exist', 'error', msg);
-			}
+
+			// If only song in the queue, then start playing.
+			if (this.songs.length == 1) this.play(this.songs[0]);
+		} catch (err) {
+			console.log(err);//bot.sendNotification('Could not join voice channel', 'error', msg);
 		}
+	}
+
+	/**
+	 * Plays the song (either from the beginning or at the seek time)
+	 * @param {Song} song 
+	 * @param {Number} seek 
+	 */
+	async play(song, seek = 0) {
+		if (!song) {
+			this.end();
+			return;
+		}
+
+		// 1024 = 1 KB, 1024 x 1024 = 1MB. The highWaterMark determines how much of the stream will be preloaded.
+		// Dedicating more memory will make streams more smoother but uses more RAM. This will however not reduce "seek" delay significantly.
+		const stream = ytdl(song.url, {
+			quality: 'highestaudio', highWaterMark: 1024 * 1024 * 2
+		});
+
+		const dispatcher = this.connection.play(stream, { seek: seek });
+
+		dispatcher.on('start', () => {
+			// Creates false start time for the song to keep queue time consistent
+			if (seek !== 0) song.startTime = Date.now() - (seek * 1000);
+			else song.startTime = Date.now();
+		})
+
+		dispatcher.on('finish', () => {
+			if (this.seeking) {
+				this.seeking = false;
+				return;
+			}
+
+			// Plays the next song (if looped, the queue will remian unchanged and continue playing the first item)
+			if (!this.looping) this.songs.shift();
+			this.play(this.songs[0]);
+		});
+
+		dispatcher.on('error', error => console.error(error));
+		dispatcher.setVolumeLogarithmic(this._volume / 5);
+
+		bot.sendNotification(`🎶 Start playing: **${song.title}**`, 'success', {
+			'channel': this.text, 'member': song.requestedBy
+		});
 	}
 }
 
-commands.reload = {
-	hide: true,
-	main: function (bot, msg) {
-		let command = msg.content.split(' ')[0];
-	
-		if (msg.author.id === bot.OWNERID) {
-			try {
-				if (commands[command]) {
-					var directory = `${__dirname}/commands/${command}.js`;
-					delete commands[command];
-					delete require.cache[require.resolve(directory)];
-					commands[command] = require(directory);
-					bot.sendNotification(`Reloaded ${command} command successfully.`, 'success', msg);
-	
-					if (bot.DETAILED_LOGGING) console.log(`Command: "${command}" | Status: Reloaded`);
-				}
-			}
-			catch (err) {
-				bot.sendNotification('Command not found', 'error', msg);
-			}
-		}
-		else {
-			bot.sendNotification('You do not have permission to use this command.', 'error', msg);
-		}
+class Song {
+	constructor(video, msg) {
+		this.id = video.id;
+		this.title = Discord.Util.escapeMarkdown(video.title);
+		this.url = `https://www.youtube.com/watch?v=${video.id}`;
+		this.thumbnail = video.thumbnails.default.url;
+		this.duration = this.calculateSongDuration(video.raw.contentDetails.duration);
+		this.startTime = -1; // Song has not started yet
+		this.requestedBy = msg.member;
 	}
-};
 
-commands.load = {
-	hide: true,
-	main: function (bot, msg) {
-		let command = msg.content.split(' ')[0];
-	
-		if (msg.author.id === bot.OWNERID) {
-			try {
-				if (!commands[command]) {
-					var directory = `${__dirname}/commands/${command}.js`;
-					commands[command] = require(directory);
-					bot.sendNotification(`Loaded ${command} command successfully.`, 'success', msg);
-	
-					if (bot.DETAILED_LOGGING) console.log(`Command: "${command}" | Status: Loaded`);
-				}
-			}
-			catch (err) {
-				bot.sendNotification('Command not found', 'error', msg);
-			}
-		}
-		else {
-			bot.sendNotification('You do not have permission to use this command.', 'error', msg);
-		}
-	}
-};
+	/**
+	 * Converts time string into epoch time
+	 * @param {String} duration 
+	 */
+	calculateSongDuration(duration) {
+		const letter = ['S', 'M', 'H'];
+		const value = [1, 60, 3600];
+		const durationComponents = duration.slice(2).split(/(.+?[A-Z])/g);
 
-commands.unload = {
-	hide: true,
-	main: function (bot, msg) {
-		let command = msg.content.split(' ')[0];
-	
-		if (msg.author.id === bot.OWNERID) {
-			try {
-				if (commands[command]) {
-					var directory = `${__dirname}/commands/${command}.js`;
-					delete commands[command];
-					delete require.cache[require.resolve(directory)];
-					bot.sendNotification(`Unloaded ${command} command successfully.`, 'success', msg);
-	
-					if (bot.DETAILED_LOGGING) console.log(`Command: "${command}" | Status: Unloaded`);
-				}
+		var time = 0;
+
+		durationComponents.forEach(element => {
+			if (element != '') {
+				time += parseInt(element.slice(0, element.length - 1)) * value[letter.indexOf(element[element.length - 1])];
 			}
-			catch (err) {
-				bot.sendNotification('Command not found', 'error', msg);
-			}
-		}
-		else {
-			bot.sendNotification('You do not have permission to use this command.', 'error', msg);
-		}
-	}
-};
+		});
+		return time * 1000;
+	};
+}
 
 //#endregion
-//#region  ---------------------	Functions   ---------------------
+//#region  ---------------------	Setup		---------------------
 
-var consoleListener = readline.createInterface({
+const config = JSON.parse(fs.readFileSync(`${__dirname}/settings.json`));
+const bot = new Bot({ autoReconnect: true }, config);
+
+const consoleListener = readline.createInterface({
 	input: process.stdin,
 	output: process.stdout,
 	terminal: false
 });
 
-// Checks if the message starts with the prefix or mentions the bot
-// and the text channel is permitted to use bot commands in.
-var validMsg = function (msg, guild) {
-	// Make sure the message starts with the appropriate prefix or mentions the bot
-	if (!msg.content.trim().startsWith(guild.prefix) && (msg.mentions.members.first() === undefined ||
-		msg.mentions.members.first().id !== bot.ID)) {
-		return false;
-	}
-
-	// If no dedicated music channel, then all are permitted. Otherwise, it must be the specified text channel
-	if (guild.textChannel !== '' && guild.textChannel !== msg.channel.id) {
-		return false;
-	}
-
-	return true;
-};
-
-// Remove the prefix/mention from the beginning of the message and returns the command
-var parseMsg = function (msg, guildPrefix) {
-	var command;
-
-	// Removes the prefix/mention and command from the message to isolate the arguments
-	if (msg.content.startsWith(guildPrefix)) {
-		command = msg.content.split(' ')[0].slice(guildPrefix.length);
-		msg.content = msg.content.slice(guildPrefix.length + command.length).trimLeft();
-	}
-	else {
-		command = msg.content.split(' ')[1];
-		msg.content = msg.content.splice(3 + String(bot.ID).length + 1 + 1 + command.length).trimLeft();
-	}
-
-	return command;
-}
-
-// Loads commands in from ./commands folder
-var loadCommands = function () {
-	var files = fs.readdirSync(`${__dirname}/commands/`);
-
-	for (let file of files) {
-		if (file.endsWith('.js')) {
-			let fileName = file.slice(0, -3);
-			try {
-				commands[fileName] = require(`${__dirname}/commands/${file}`);
-				if (bot.DETAILED_LOGGING) console.table({ Command: fileName, Status: 'Loaded' });
-			} catch (error) {
-				if (bot.DETAILED_LOGGING) console.table({ Command: fileName, Status: 'Failed to load' });
-			}
-		}
-	}
-
-	console.log('———— All Commands Loaded! ————');
-};
-
 //#endregion
 //#region  ---------------------	Handlers	---------------------
 
 bot.on('ready', () => {
+	bot.start();
 	bot.user.setActivity(`over ${bot.guilds.cache.array().length} servers...`, { type: 'WATCHING' });
-	loadCommands();
+
 	const startuptime = Date.now() - startTime;
 	console.log(`Ready to begin! Serving in ${bot.guilds.cache.array().length} servers. Startup time: ${startuptime}ms`);
 });
 
 bot.on('message', msg => {
-	const guild = bot.getGuild(msg.guild.id);
+	const guild = bot.getGuild(msg.guild);
 
-	if (msg.author.id != bot.ID && validMsg(msg, guild)) {
+	if (msg.author.id !== bot.ID && guild.validMessage(msg)) {
 
-		// Gets the command and remove the prefix/mention from the beginning of the message
-		let command = parseMsg(msg, guild.prefix);
+		const command = guild.extractCommand(msg);
 
-		if (commands[command]) {
+		if (bot.commandDict[command]) {
 			// Logs guild, author, and message if enabled
-			if (bot.DETAILED_LOGGING) bot.log['commandMsg'](msg, command);
+			if (LOGGING) bot.log['commandMsg'](msg, command);
 
 			// Runs the command
-			commands[command].main(bot, msg);
+			bot.runCommand(command, guild, msg);
 		}
 	}
 });
@@ -541,8 +718,8 @@ bot.on('disconnected', () => {
 
 bot.on('guildCreate', guild => {
 	bot.user.setActivity(`over ${bot.guilds.array().length} servers...`, { type: 'WATCHING' });
-	bot.getGuild(guild.id); // Initializes a new guild
-	if (bot.DETAILED_LOGGING) console.log(`New guild: ${guild.name}`);
+	bot.getGuild(guild); // Initializes a new guild
+	if (LOGGING) console.log(`New guild: ${guild.name}`);
 })
 
 bot.login(bot.TOKEN);
@@ -552,6 +729,26 @@ consoleListener.on('line', function (input) {
 		console.log('Destroying bot and exiting application...');
 		bot.destroy();
 		process.exit(0);
+	}
+	else if (input.startsWith('reload')) {
+		let name = input.replace('reload', '').trimLeft();
+
+		// Only load command if it was successfully unloaded.
+		if (bot.unloadCommand(name))
+			if (bot.loadCommand(name))
+				console.log('Command successfully reloaded');
+	}
+	else if (input.startsWith('unload')) {
+		let name = input.replace('unload', '').trimLeft();
+
+		if (bot.unloadCommand(name))
+			console.log('Command successfully unloaded');
+	}
+	else if (input.startsWith('load')) {
+		let name = input.replace('load', '').trimLeft();
+
+		if (bot.loadCommand(name))
+			console.log('Command successfully loaded');
 	}
 });
 

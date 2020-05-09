@@ -1,11 +1,6 @@
 module.exports = {
-	main: async function (bot, msg) {
-		const serverQueue = bot.queue.get(msg.guild.id);
-
-		if (!msg.member.voice.channel) {
-			bot.sendNotification('You must be in a voice channel in order to use the loop command.', 'error', msg);
-		}
-		else if (!serverQueue) {
+	main: async function (bot, guild, msg) {
+		if (!guild.queue.inUse) {
 			bot.sendNotification('There is no music playing at the moment...', 'error', msg);
 		}
 		else {
@@ -25,15 +20,20 @@ module.exports = {
 				parsedTime += Number(arg.replace(TIME_INDICATORS[indicatorIndex], '')) * TIME_VALUES[indicatorIndex];
 			}
 
-			if (parsedTime * 1000 >= serverQueue.songs[0].duration) {
+			if (parsedTime * 1000 >= guild.queue.songs[0].duration) {
 				bot.sendNotification('Sorry, but that given time is greater than the duration of the song.', 'error', msg);
 				return;
 			}
 
 			// Stops stream and replays with at the seeked time.
-			serverQueue.seeking = true;
-			serverQueue.connection.dispatcher.end();
-			await bot.play(msg.guild, serverQueue.songs[0], parsedTime);
+			guild.queue.seeking = true;
+			guild.queue.connection.dispatcher.end();
+		
+			// The only problem with this is that discord.js needs to scan through
+			// the entire stream to get to "seeked" time, so the farther the seek time
+			// is into the stream, the greater the delay will be. No current work arounds for this.
+			// Ex. => "seek 10s" delay < "seek 10m" delay
+			await guild.queue.play(guild.queue.songs[0], parsedTime);
 		}
 	},
 	help: `Skip forward/backward to a specific time of the song. Example: "seek 1h 5m 3s".`,

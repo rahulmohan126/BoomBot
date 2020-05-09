@@ -1,9 +1,9 @@
 module.exports = {
-	main: function (bot, msg) {
-		if (msg.author.id === msg.guild.ownerID || msg.roles.cache.has(guild.dj)) {
-			serverQueue.instant = !serverQueue.instant;
-			bot.sendNotification(`Instant play ${serverQueue.instant ? 'enabled!' : 'disabled!'}`, 'success', msg);
-			bot.saveConfig();
+	main: function (bot, guild, msg) {
+		if (guild.checkPerms(msg.member) < 2) {
+			guild.instant = !guild.instant.instant;
+			guild.save();
+			bot.sendNotification(`Instant play ${guild.instant ? 'enabled!' : 'disabled!'}`, 'success', msg);
 		}
 		else {
 			bot.sendNotification('Only the guild owner can toggle settings.', 'error', msg);

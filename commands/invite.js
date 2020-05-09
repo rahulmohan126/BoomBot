@@ -1,5 +1,5 @@
 module.exports = {
-	main: function (bot, msg) {
+	main: function (bot, guild, msg) {
 		// Permissions can be calculated either at https://discordapi.com/permissions.html or in the developer portal, under the bot
 		// tab on your application. These are the permissions your bot gains once being invited into a server.
 		const PERMISSIONS = 36719616;

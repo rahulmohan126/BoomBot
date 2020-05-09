@@ -1,13 +1,11 @@
 module.exports = {
-	main: function (bot, msg) {
-		const serverQueue = bot.queue.get(msg.guild.id);
-
-		if (!serverQueue) {
-			bot.sendNotification('There is nothing playing.', 'error', msg);
+	main: function (bot, guild, msg) {
+		if (!guild.queue.inUse) {
+			bot.sendNotification('There is no music playing at the moment...', 'error', msg);
 		}
-		else if (serverQueue.playing) {
-			serverQueue.playing = false;
-			serverQueue.connection.dispatcher.pause();
+		else if (guild.queue.playing) {
+			guild.queue.playing = false;
+			guild.queue.connection.dispatcher.pause();
 			bot.sendNotification('⏸ Music paused!', 'success', msg);
 		}
 		else {
