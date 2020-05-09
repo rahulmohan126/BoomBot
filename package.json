@@ -2,9 +2,9 @@
   "name": "boombot",
   "version": "1.0.0",
   "description": "A music bot for discord",
-  "main": "bot.js",
+  "main": "src/bot.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node src/bot.js"
   },
   "repository": {
     "type": "git",
@@ -17,9 +17,9 @@
   },
   "homepage": "https://github.com/rahulmohan126/BoomBot#readme",
   "dependencies": {
-    "discord.js": "^12.0.2",
-    "node-opus": "^0.3.3",
+    "@discordjs/opus": "^0.3.2",
+    "discord.js": "^12.2.0",
     "simple-youtube-api": "^5.2.1",
-    "ytdl-core": "^2.0.0"
+    "ytdl-core": "^2.1.2"
   }
 }
