@@ -1,9 +1,9 @@
 module.exports = {
 	main: function (bot, guild, msg) {
 		if (guild.checkPerms(msg.member) < 2) {
-			guild.instant = !guild.instant.instant;
+			guild.instant = !guild.instant;
 			guild.save();
-			bot.sendNotification(`Instant play ${guild.instant ? 'enabled!' : 'disabled!'}`, 'success', msg);
+			bot.sendNotification(`Song search ${guild.instant ? 'disabled!' : 'enabled!'}`, 'success', msg);
 		}
 		else {
 			bot.sendNotification('Only the guild owner can toggle settings.', 'error', msg);

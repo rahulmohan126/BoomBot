@@ -60,7 +60,7 @@ module.exports = {
 						let selectionMsg = await msg.channel.send(`
 __**Song selection:**__
 
-${videos.map(video => `**${++index} -** ${bot.escapeMarkdown(video.title)}`).join('\n')}
+${videos.map(video => `**${index++} -** ${bot.escapeMarkdown(video.title)}`).join('\n')}
 
 Please provide a value to select one of the search results ranging from 1-10.`);
 
