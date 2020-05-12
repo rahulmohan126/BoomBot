@@ -11,7 +11,9 @@ module.exports = {
 🎶 Now playing: **${guild.queue.songs[0].title}**
 
 **Looped:** ${guild.queue.loop ? 'Looped' : 'Not looped'}
-Duration: \`${timeLeftInSong} / ${songDuration}\``, 'info', msg);
+**Duration:** \`${timeLeftInSong} / ${songDuration}\`
+**Requested By:** ${guild.queue.songs[0].requestedBy.displayName}
+`, 'info', msg);
 		}
 	},
 	help: 'See what song is playing and how much time is left.',

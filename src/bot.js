@@ -160,6 +160,37 @@ class Bot extends Discord.Client {
 		console.log('———— All Commands Loaded! ————');
 	}
 
+	loadSoundboard() {
+		var audioFiles = fs.readdirSync(__dirname + '/soundboard/');
+		for (let file of audioFiles) {
+			if (file.endsWith('.mp3')) {
+				let fileName = file.slice(0, -4);
+				try {
+					const command = new Command(fileName, {
+						main: function(bot, guild, msg) {
+							const voiceChannel = msg.member.voice.channel;
+
+							if (voiceChannel && guild.checkVoiceChannelByID(voiceChannel.id)) {
+								guild.queue.playFile(msg, voiceChannel, fileName);
+							}
+						},
+						help: 'A soundboard effect',
+						usage: fileName,
+						soundboard: true,
+					});
+
+					this.commands.push(command);
+					this.commandDict[fileName] = command;
+
+					if (LOGGING) console.table({ Command: fileName, Status: 'Loaded' });
+				} catch (error) {
+					console.log(error);
+					if (LOGGING) console.table({ Command: fileName, Status: 'Failed to load' });
+				}
+			}
+		}
+	}
+
 	/**
 	 * Unloads a command indentified by its primary name
 	 * @param {String} name Command name
@@ -171,6 +202,10 @@ class Bot extends Discord.Client {
 
 		if (!command) {
 			console.error('Command not found');
+			return false;
+		}
+		else if (command.soundboard) {
+			console.error('Soundboard noises cannot be reloaded');
 			return false;
 		}
 
@@ -309,6 +344,7 @@ class Bot extends Discord.Client {
 	start() {
 		this.loadGuilds();
 		this.loadCommands();
+		this.loadSoundboard();
 	}
 }
 
@@ -425,7 +461,12 @@ class Command {
 		this.main = command.main;
 		this.keywords = command.keywords;
 		this.usage = command.usage;
+		
+		// Whether to display it in the HELP command.
 		this.hide = command.hide ? true : false;
+
+		// If it is a soundboard effect or not
+		this.soundboard = command.soundboard ? true : false;
 	}
 }
 
@@ -448,6 +489,7 @@ class MusicQueue {
 		this.seeking = false;
 
 		this.inUse = false;
+		this.usingSB = false;
 	}
 
 	/**
@@ -484,6 +526,7 @@ class MusicQueue {
 		if (this.voice) {
 			this.voice.leave();
 		}
+
 		this.text = null;
 		this.voice = null;
 
@@ -569,7 +612,7 @@ class MusicQueue {
 					},
 					{
 						name: "Time Until Played",
-						value: `\`${this.timeToString(this.totalTime - song.duration)}\``,
+						value: `\`${this.timeToString(this.songs.length == 1 ? 0 : this.totalTime - song.duration)}\``,
 						inline: true
 					},
 					{
@@ -631,6 +674,53 @@ class MusicQueue {
 
 		bot.sendNotification(`🎶 Start playing: **${song.title}**`, 'success', {
 			'channel': this.text, 'member': song.requestedBy
+		});
+	}
+
+	
+	async playFile(msg, voiceChannel, fileName) {
+
+		function sleep(ms) {
+			return new Promise(resolve => setTimeout(resolve, ms));
+		}
+
+		// Prevents soundboard overriding.
+		if (this.usingSB) {
+			return;
+		}
+
+		// Ends the music queue if currently in use. No other music control commands will work
+		//  with using the soundboard (since the music queue is considered not in use)
+		if (this.inUse) {
+			this.end();
+			this.usingSB = true;
+
+			// Prevents errors caused by instantly leaving and joining a channel
+			// 500ms is an arbitrary amount of time, just ensure it is not too close to 0.
+			await sleep(500);
+		}
+
+		const connection = await voiceChannel.join();
+
+		if (!connection) {
+			this.client.sendNotification('Cannot join this voice channel', 'error', msg);
+			return;
+		}
+
+		const dispatcher = connection.play(`${__dirname}/soundboard/${fileName}.mp3`);
+
+		// Handles disconnection or any other reason that the connection stops.
+		connection.on('disconnect', () => {
+			this.usingSB = false;
+		})
+
+		// Leaves voice channel after the defined delay so o that the soundboard effect does not cut abruptly
+		dispatcher.on('finish', async function() {
+			const SBDelay = 500; // ms
+			await sleep(SBDelay);
+
+			voiceChannel.leave();
+			this.usingSB = false;
 		});
 	}
 }
@@ -737,18 +827,22 @@ consoleListener.on('line', function (input) {
 		if (bot.unloadCommand(name))
 			if (bot.loadCommand(name))
 				console.log('Command successfully reloaded');
+			else console.log('Could not load that command during reload');
+		else console.log('Could not unload that command during reload');
 	}
 	else if (input.startsWith('unload')) {
 		let name = input.replace('unload', '').trimLeft();
 
 		if (bot.unloadCommand(name))
 			console.log('Command successfully unloaded');
+		else console.log('Could not unload that command');
 	}
 	else if (input.startsWith('load')) {
 		let name = input.replace('load', '').trimLeft();
 
 		if (bot.loadCommand(name))
 			console.log('Command successfully loaded');
+		else console.log('Could not load that command');
 	}
 });
 
