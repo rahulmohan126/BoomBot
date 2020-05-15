@@ -28,7 +28,7 @@ module.exports = {
 			// Stops stream and replays with at the seeked time.
 			guild.queue.seeking = true;
 			guild.queue.connection.dispatcher.end();
-		
+
 			// The only problem with this is that discord.js needs to scan through
 			// the entire stream to get to "seeked" time, so the farther the seek time
 			// is into the stream, the greater the delay will be. No current work arounds for this.
@@ -37,5 +37,6 @@ module.exports = {
 		}
 	},
 	help: `Skip forward/backward to a specific time of the song. Example: "seek 1h 5m 3s".`,
-	usage: 'seek [time]'
+	usage: 'seek [time]',
+	module: 'music'
 };

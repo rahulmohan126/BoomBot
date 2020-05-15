@@ -11,5 +11,6 @@ module.exports = {
 		}
 	},
 	help: 'Stop the current song and clears song queue',
-	usage: 'stop'
+	usage: 'stop',
+	module: 'music'
 };

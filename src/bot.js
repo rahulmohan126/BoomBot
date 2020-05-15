@@ -92,42 +92,51 @@ class Bot extends Discord.Client {
 
 		let currentCommand = new Command('help', {
 			hide: true,
-			main: function (bot, msg) {
-
+			main: function (bot, guild, msg) {
 				const GUILD_PREFIX = bot.getGuild(msg.guild).prefix;
 
 				if (msg.content === '') {
-					var cmds = [];
+					var cmds = {};
 
-					for (let command in bot.commands) {
+					for (let command of bot.commands) {
 						if (!command.hide) {
-							cmds.push(command);
+							if (!cmds[command.module]) {
+								cmds[command.module] = [];
+							}
+
+							cmds[command.module].push(command.name);
 						}
 					}
 
-					cmds = cmds.join(', ');
+					let embedList = [];
 
-					bot.sendNotification(`Bot prefix: ${GUILD_PREFIX}`, 'info', msg, [
-						{
-							name: 'Commands: ',
-							value: cmds,
-							inline: true
-						}
-					]);
+					for (let key in cmds) {
+						embedList.push({
+							name: `${key}`,
+							value: cmds[key].join(', '),
+							inline: false
+						})
+					}
+
+					embedList.push({
+						name: 'soundboard',
+						value: Object.keys(guild.soundboard).join(', '),
+						inline: false
+					})
+
+					bot.sendNotification(`Bot prefix: ${GUILD_PREFIX} | See more using: \`help <command name>\``, 'info', msg, embedList);
 				}
 				else {
-					let command = msg.content;
-
-					if (commands[command]) {
-
-						bot.sendNotification(`Bot prefix: ${GUILD_PREFIX} | Command: ${command}`, 'info', msg, [
+					let command = bot.commands.filter(item => item.name === msg.content)[0] || guild.soundboard[msg.content];
+					if (command) {
+						bot.sendNotification(`Bot prefix: ${GUILD_PREFIX} | Command: ${command.name}`, 'info', msg, [
 							{
 								name: 'Description: ',
-								value: commands[command].help,
+								value: command.help,
 							},
 							{
 								name: 'Usage: ',
-								value: GUILD_PREFIX + commands[command].usage,
+								value: GUILD_PREFIX + command.usage,
 							}
 						]);
 					}
@@ -160,24 +169,17 @@ class Bot extends Discord.Client {
 		console.log('———— All Commands Loaded! ————');
 	}
 
+	/**
+	 * Loads all global and guild soundboard commands
+	 */
 	loadSoundboard() {
 		var audioFiles = fs.readdirSync(__dirname + '/soundboard/');
 		for (let file of audioFiles) {
+			let fileDirectory = __dirname + '/soundboard/' + file;
 			if (file.endsWith('.mp3')) {
 				let fileName = file.slice(0, -4);
 				try {
-					const command = new Command(fileName, {
-						main: function(bot, guild, msg) {
-							const voiceChannel = msg.member.voice.channel;
-
-							if (voiceChannel && guild.checkVoiceChannelByID(voiceChannel.id)) {
-								guild.queue.playFile(msg, voiceChannel, fileName);
-							}
-						},
-						help: 'A soundboard effect',
-						usage: fileName,
-						soundboard: true,
-					});
+					const command = this.createSoundboardCommand(fileName);
 
 					this.commands.push(command);
 					this.commandDict[fileName] = command;
@@ -186,6 +188,31 @@ class Bot extends Discord.Client {
 				} catch (error) {
 					console.log(error);
 					if (LOGGING) console.table({ Command: fileName, Status: 'Failed to load' });
+				}
+			}
+			// Loads guild soundboard
+			else if (fs.statSync(fileDirectory).isDirectory()) {
+				var guildFiles = fs.readdirSync(fileDirectory);
+
+				for (let subfile of guildFiles) {
+					let subFileName = subfile.slice(0, -4);
+					try {
+						const command = this.createSoundboardCommand(subFileName, true);
+
+						const guild = this.getGuildByID(file);
+
+						if (guild) {
+							guild.soundboard[subFileName] = command;
+						}
+						else {
+							throw new Error('No guild with that id exists');
+						}
+
+						if (LOGGING) console.table({ Command: subFileName, Status: 'Loaded' });
+					} catch (error) {
+						console.log(error);
+						if (LOGGING) console.table({ Command: subFileName, Status: 'Failed to load' });
+					}
 				}
 			}
 		}
@@ -255,6 +282,21 @@ class Bot extends Discord.Client {
 		}
 	}
 
+	createSoundboardCommand(fileName, guildCommand = false) {
+		return new Command(fileName, {
+			main: function (bot, guild, msg) {
+				const voiceChannel = msg.member.voice.channel;
+
+				if (voiceChannel && guild.checkVoiceChannelByID(voiceChannel.id)) {
+					guild.queue.playFile(msg, voiceChannel, fileName, guildCommand);
+				}
+			},
+			help: 'A soundboard effect',
+			usage: fileName,
+			soundboard: true,
+		});
+	}
+
 	/**
 	 * Runs a command from a m
 	 * @param {Command} command 
@@ -266,7 +308,7 @@ class Bot extends Discord.Client {
 	}
 
 	/**
-	 * Get
+	 * Gets guild
 	 * @param {Discord.Guild} guild 
 	 * @returns {Guild}
 	 */
@@ -277,6 +319,19 @@ class Bot extends Discord.Client {
 		}
 
 		return this.database.get(guild.id);
+	}
+
+	/**
+	 * Gets guild by id
+	 * @param {Discord.Snowflake} id
+	 * @returns {Guild} or null if guild with id doesn't exist
+	 */
+	getGuildByID(id) {
+		if (!this.database.has(id)) {
+			null;
+		}
+
+		return this.database.get(id);
 	}
 
 	/**
@@ -366,6 +421,8 @@ class Guild {
 		this.dj = info.dj;
 		this.instant = info.instant;
 
+		this.soundboard = {};
+
 		this.queue = new MusicQueue(this.client);
 	}
 
@@ -434,6 +491,10 @@ class Guild {
 		return command;
 	}
 
+	hasSoundboard(command) {
+		return !!this.soundboard[command];
+	}
+
 	/**
 	 * Gets the guild data in JSON
 	 */
@@ -461,7 +522,9 @@ class Command {
 		this.main = command.main;
 		this.keywords = command.keywords;
 		this.usage = command.usage;
-		
+		this.help = command.help;
+		this.module = command.module;
+
 		// Whether to display it in the HELP command.
 		this.hide = command.hide ? true : false;
 
@@ -677,8 +740,8 @@ class MusicQueue {
 		});
 	}
 
-	
-	async playFile(msg, voiceChannel, fileName) {
+
+	async playFile(msg, voiceChannel, fileName, guildCommand) {
 
 		function sleep(ms) {
 			return new Promise(resolve => setTimeout(resolve, ms));
@@ -707,7 +770,12 @@ class MusicQueue {
 			return;
 		}
 
-		const dispatcher = connection.play(`${__dirname}/soundboard/${fileName}.mp3`);
+		var subdirectory = ''
+		if (guildCommand) {
+			subdirectory = voiceChannel.guild.id + '/';
+		}
+
+		const dispatcher = connection.play(`${__dirname}/soundboard/${subdirectory}${fileName}.mp3`);
 
 		// Handles disconnection or any other reason that the connection stops.
 		connection.on('disconnect', () => {
@@ -715,7 +783,7 @@ class MusicQueue {
 		})
 
 		// Leaves voice channel after the defined delay so o that the soundboard effect does not cut abruptly
-		dispatcher.on('finish', async function() {
+		dispatcher.on('finish', async function () {
 			const SBDelay = 500; // ms
 			await sleep(SBDelay);
 
@@ -792,6 +860,14 @@ bot.on('message', msg => {
 
 			// Runs the command
 			bot.runCommand(command, guild, msg);
+		}
+		// Seperate condition for guild soundboards.
+		else if (guild.hasSoundboard(command)) {
+			// Logs guild, author, and message if enabled
+			if (LOGGING) bot.log['commandMsg'](msg, command);
+
+			// Runs the command
+			guild.soundboard[command].main(bot, guild, msg);
 		}
 	}
 });

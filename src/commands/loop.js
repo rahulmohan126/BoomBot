@@ -9,5 +9,6 @@ module.exports = {
 		}
 	},
 	help: `Keep replaying a song... forever. Can be disabled by using loop again or ending music.`,
-	usage: 'loop'
+	usage: 'loop',
+	module: 'music'
 };

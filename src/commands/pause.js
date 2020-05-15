@@ -13,5 +13,6 @@ module.exports = {
 		}
 	},
 	help: 'Pause the current song.',
-	usage: 'pause'
+	usage: 'pause',
+	module: 'music'
 };

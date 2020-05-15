@@ -4,5 +4,6 @@ module.exports = {
 		msg.channel.send(`Uptime: \`${time}s\``);
 	},
 	help: 'See how long the server has been online.',
-	usage: 'uptime'
+	usage: 'uptime',
+	module: 'other'
 };

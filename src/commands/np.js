@@ -17,5 +17,6 @@ module.exports = {
 		}
 	},
 	help: 'See what song is playing and how much time is left.',
-	usage: 'np'
+	usage: 'np',
+	module: 'music'
 };

@@ -10,4 +10,5 @@ module.exports = {
 	},
 	help: 'Creates a bot invite link to add to other servers and credits the original creator of the bot.',
 	usage: 'invite',
+	module: 'other'
 };

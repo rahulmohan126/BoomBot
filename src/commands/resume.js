@@ -13,5 +13,6 @@ module.exports = {
 		}
 	},
 	help: 'Resumes the current song.',
-	usage: 'resume'
+	usage: 'resume',
+	module: 'music'
 };

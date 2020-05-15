@@ -5,10 +5,11 @@ module.exports = {
 		}
 		else {
 			guild.queue.connection.dispatcher.end();
-			
+
 			bot.sendNotification('▶︎▶︎ Music skipped!', 'success', msg);
 		}
 	},
 	help: 'Skips the current song to the next one in the queue.',
-	usage: 'skip'
+	usage: 'skip',
+	module: 'music'
 };

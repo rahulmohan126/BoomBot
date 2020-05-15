@@ -6,7 +6,6 @@ module.exports = {
 			bot.sendNotification('There is no music playing at the moment...', 'error', msg);
 		}
 		else if (arg == '') {
-			console.log('xxx');
 			bot.sendNotification(`The current volume is: **${guild.queue.volume}**`, 'info', msg);
 		}
 		else if (!arg) { // Number parse fail
@@ -26,5 +25,6 @@ module.exports = {
 		}
 	},
 	help: 'See/Set the volume for the server. Warning: Music will distort above 10.',
-	usage: 'volume (new volume)'
+	usage: 'volume (new volume)',
+	module: 'music'
 };
