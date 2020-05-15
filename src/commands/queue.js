@@ -29,5 +29,6 @@ ${songsInQueueStr}
 		}
 	},
 	help: 'Gets all the songs in the queue.',
-	usage: 'queue'
+	usage: 'queue',
+	module: 'music'
 };

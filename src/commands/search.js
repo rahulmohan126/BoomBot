@@ -10,5 +10,6 @@ module.exports = {
 		}
 	},
 	help: `Toggles play with search. While off, music will be played immediately upon request, insteading of giving search results.`,
-	usage: 'volume (new volume)'
+	usage: 'search',
+	module: 'moderation & management'
 };

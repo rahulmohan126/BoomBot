@@ -16,7 +16,6 @@ module.exports = {
 				return;
 			}
 			else if (channelType == 'text' || channelType == 'voice') {
-				console.log(channelName);
 				var channelID;
 				var channel;
 				// Checks for all
@@ -34,7 +33,7 @@ module.exports = {
 
 					if (channelType == 'text') guild.textChannel = actualID;
 					else guild.voiceChannel = actualID;
-					
+
 					guild.save();
 					bot.sendNotification(`The channel is ${channelType} channel is now ${channel || 'all'}`, 'success', msg);
 					return;
@@ -55,7 +54,8 @@ module.exports = {
 			}
 		}
 
-},
+	},
 	help: 'Set bot-allowed text and voice channels. Putting no channel identifier will give the current channel status',
-		usage: 'channel [voice | text] (channel name | all)',
+	usage: 'channel [voice | text] (channel name | all)',
+	module: 'moderation & management'
 };

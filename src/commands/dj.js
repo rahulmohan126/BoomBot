@@ -2,7 +2,7 @@ module.exports = {
 	main: function (bot, guild, msg) {
 
 		const arg = msg.content.split(' ')[0].trim();
-		
+
 		if (arg == '') {
 			if (guild.dj == '') {
 				bot.sendNotification('There is no current DJ role.', 'info', msg);
@@ -21,5 +21,6 @@ module.exports = {
 		}
 	},
 	help: `Assigns a DJ role, DJs and guild owners are the only ones that can change server settings.`,
-	usage: 'dj (new dj)'
+	usage: 'dj (new dj)',
+	module: 'moderation & management'
 };
