@@ -120,7 +120,7 @@ class Bot extends Discord.Client {
 
 					embedList.push({
 						name: 'soundboard',
-						value: Object.keys(guild.soundboard).join(', '),
+						value: !Object.entries(guild.soundboard).length ? '---' : Object.keys(guild.soundboard).join(', '),
 						inline: false
 					})
 
