@@ -11,15 +11,15 @@ This project is still in progress so report any bugs or issues and they will be 
 In the "Installation" section, follow instuctions until the end of "Creating a settings.json". At that point you should have everything you need to setup a docker container.
 
 Docker Compose:
-```toml
+```yaml
 services:
-	boombot:
-		image: rahulmohan126/boombot:latest
-		container_name: boombot
-		restart: always
-		volumes:
-			- ./my/saved/data:/boombot/data # ./my/saved/data can be changed accordingly
-			- ./my_settings.json:/boombot/settings.json # ./my_settings.json can be changed accordingly
+    boombot:
+        image: rahulmohan126/boombot:latest
+        container_name: boombot
+        restart: always
+        volumes:
+            - ./my/saved/data:/boombot/data # ./my/saved/data can be changed accordingly
+            - ./my_settings.json:/boombot/settings.json # ./my_settings.json can be changed accordingly
 ```
 
 Be aware that commands (such as "stop") cannot be used while using Docker. 
