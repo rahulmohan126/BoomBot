@@ -13,9 +13,7 @@ module.exports = {
 
 			delete guild.soundboard[commandName];
 
-			let dir = __dirname.split(require('path').sep);
-			dir.pop();
-			dir = `${dir.join('/')}/soundboard/${guild.id}/${commandName}.mp3`;
+			dir = `./data/soundboard/${guild.id}/${commandName}.mp3`;
 
 			if (fs.existsSync(dir)) {
 				fs.unlinkSync(dir);

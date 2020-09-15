@@ -72,7 +72,7 @@ class Bot extends Discord.Client {
 	 * Loads all the guild datas
 	 */
 	loadGuilds() {
-		let jsonInfo = JSON.parse(fs.readFileSync(`${__dirname}/guild.json`));
+		let jsonInfo = JSON.parse(fs.readFileSync(`./data/guild.json`));
 
 		for (let guild of this.guilds.cache.values()) {
 			if (guild.id in jsonInfo) {
@@ -150,7 +150,7 @@ class Bot extends Discord.Client {
 		this.commands.push(currentCommand);
 		this.commandDict['help'] = currentCommand;
 
-		var files = fs.readdirSync(`${__dirname}/commands/`);
+		var files = fs.readdirSync(`./src/commands/`);
 
 		for (let file of files) {
 			if (file.endsWith('.js')) {
@@ -173,9 +173,9 @@ class Bot extends Discord.Client {
 	 * Loads all global and guild soundboard commands
 	 */
 	loadSoundboard() {
-		var audioFiles = fs.readdirSync(__dirname + '/soundboard/');
+		var audioFiles = fs.readdirSync('./data/soundboard/');
 		for (let file of audioFiles) {
-			let fileDirectory = __dirname + '/soundboard/' + file;
+			let fileDirectory = `./data/soundboard/${file}`;
 			if (file.endsWith('.mp3')) {
 				let fileName = file.slice(0, -4);
 				try {
@@ -223,7 +223,7 @@ class Bot extends Discord.Client {
 	 * @param {String} name Command name
 	 */
 	unloadCommand(name) {
-		const directory = `${__dirname}/commands/${name}.js`
+		const directory = './src/commands/${name}.js';
 
 		let command = this.commands.find(command => command.name == name);
 
@@ -261,7 +261,7 @@ class Bot extends Discord.Client {
 	 */
 	loadCommand(name) {
 		try {
-			const directory = `${__dirname}/commands/${name}.js`
+			const directory = './src/commands/${name}.js';
 
 			let command = new Command(name, require(directory));
 
@@ -390,7 +390,7 @@ class Bot extends Discord.Client {
 			jsonDatabase[guildID] = this.database.get(guildID).json();
 		}
 
-		fs.writeFileSync(`${__dirname}/guild.json`, JSON.stringify(jsonDatabase, null, 4));
+		fs.writeFileSync('./data/guild.json', JSON.stringify(jsonDatabase, null, 4));
 	}
 
 	/**
@@ -775,7 +775,7 @@ class MusicQueue {
 			subdirectory = voiceChannel.guild.id + '/';
 		}
 
-		const dispatcher = connection.play(`${__dirname}/soundboard/${subdirectory}${fileName}.mp3`);
+		const dispatcher = connection.play('./data/soundboard/${subdirectory}${fileName}.mp3');
 
 		// Handles disconnection or any other reason that the connection stops.
 		connection.on('disconnect', () => {
@@ -827,7 +827,7 @@ class Song {
 //#endregion
 //#region  ---------------------	Setup		---------------------
 
-const config = JSON.parse(fs.readFileSync(`${__dirname}/settings.json`));
+const config = JSON.parse(fs.readFileSync(`./settings.json`));
 const bot = new Bot({ autoReconnect: true }, config);
 
 const consoleListener = readline.createInterface({

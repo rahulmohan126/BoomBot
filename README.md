@@ -6,20 +6,25 @@ This project is a simple Discord Music bot, so you can have more control over yo
 
 This project is still in progress so report any bugs or issues and they will be fixed as soon as possible.
 
+## Docker
+
+In the "Installation" section, follow instuctions until the end of "Creating a settings.json". At that point you should have everything you need to setup a docker container.
+
+Docker Compose:
+```toml
+services:
+	boombot:
+		image: rahulmohan126/boombot:latest
+		container_name: boombot
+		restart: always
+		volumes:
+			- ./my/saved/data:/boombot/data # ./my/saved/data can be changed accordingly
+			- ./my_settings.json:/boombot/settings.json # ./my_settings.json can be changed accordingly
+```
+
+Be aware that commands (such as "stop") cannot be used while using Docker. 
+
 ## Installation
-
-##### Create a settings.json
-```
-{
-	"BOTID":"Your client id",
-	"OWNERID":"Your id",
-	"PREFIX":"Your prefix",
-	"TOKEN":"Your client token",
-	"GOOGLE_API_KEY":"Your api key"
-}
-```
-
-Put all ids/tokens/keys in between the quotation marks.
 
 ### Creating a Bot
 
@@ -33,11 +38,25 @@ For your API key, go to [this](https://developers.google.com/youtube/v3/getting-
 
 :warning: DO NOT SHARE YOUR API KEY OR CLIENT TOKEN WITH ANYONE :warning:
 
+### Create a settings.json
+```
+{
+	"BOTID":"Your client id",
+	"OWNERID":"Your id",
+	"PREFIX":"Your prefix",
+	"TOKEN":"Your client token",
+	"GOOGLE_API_KEY":"Your api key"
+}
+```
+
+Put all ids/tokens/keys in between the quotation marks.
+This file should be placed in the project's root directory.
+
 ### Requirements
 
 1. node.js
 3. discord.js
-4. Using opusscript or node-opus, ytdl-core
+4. ytdl-core
 5. simple-youtube-api
 
 #### node.js

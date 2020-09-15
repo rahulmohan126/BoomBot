@@ -15,9 +15,7 @@ module.exports = {
 			}
 			else {
 				fetch(attachment.url).then(res => {
-					let dir = __dirname.split(require('path').sep);
-					dir.pop();
-					dir = `${dir.join('/')}/soundboard/${guild.id}/`;
+					dir = `./data/soundboard/${guild.id}/`;
 
 					if (!fs.existsSync(dir)) {
 						fs.mkdirSync(dir);
