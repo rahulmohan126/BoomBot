@@ -4,8 +4,8 @@
   "description": "A music bot for discord",
   "main": "src/bot.js",
   "scripts": {
-	"test": "node src/bot.js",
-	"start": "node src/bot.js"
+    "test": "node src/bot.js",
+    "start": "node src/bot.js"
   },
   "repository": {
     "type": "git",
@@ -19,8 +19,8 @@
   "homepage": "https://github.com/rahulmohan126/BoomBot#readme",
   "dependencies": {
     "@discordjs/opus": "^0.3.2",
-    "discord.js": "^12.2.0",
+    "discord.js": "^12.3.1",
     "simple-youtube-api": "^5.2.1",
-    "ytdl-core": "^2.1.2"
+    "ytdl-core": "^3.2.2"
   }
 }
