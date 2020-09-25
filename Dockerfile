@@ -1,21 +1,20 @@
 # For easier deployment, use Docker to deploy boombot with ease.
 
-FROM node:14
+FROM node:latest
+
+RUN ldd --version
 
 # Connect repo to container
 # Example usage in docker-compose:
 # volumes:
 #     - ./BoomBot:/boombot
-RUN mkdir boombot
+WORKDIR "/boombot"
 
-COPY ./src /boombot/src
-COPY ./package-lock.json /boombot
-COPY ./package.json /boombot
+COPY src src
+COPY package.json package.json
 
 # Setup Nodejs dependencies
-RUN cd boombot && npm install
-
-WORKDIR "/boombot"
+RUN npm install
 
 ENTRYPOINT [ "npm" ]
 CMD [ "start" ]
