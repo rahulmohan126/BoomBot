@@ -277,26 +277,21 @@ class Bot extends Discord.Client {
 	 * @param {String} name Command name
 	 */
 	loadCommand(name) {
-		try {
-			const directory = './src/commands/${name}.js';
+		const directory = `./commands/${name}.js`;
 
-			let command = new Command(name, require(directory));
+		let command = new Command(name, require(directory));
 
-			bot.commands.push(command);
+		bot.commands.push(command);
 
-			this.commandDict[name] = command;
+		this.commandDict[name] = command;
 
-			if (command.keywords !== undefined) {
-				for (let keyword of command.keywords) {
-					this.commandDict[keyword] = command;
-				}
+		if (command.keywords !== undefined) {
+			for (let keyword of command.keywords) {
+				this.commandDict[keyword] = command;
 			}
+		}
 
-			return true;
-		}
-		catch (err) {
-			return false;
-		}
+		return true;
 	}
 
 	createSoundboardCommand(fileName, guildCommand = false) {

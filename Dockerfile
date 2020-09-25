@@ -6,10 +6,16 @@ FROM node:14
 # Example usage in docker-compose:
 # volumes:
 #     - ./BoomBot:/boombot
-VOLUME [ "/boombot" ]
+RUN mkdir boombot
+
+COPY ./src /boombot/src
+COPY ./package-lock.json /boombot
+COPY ./package.json /boombot
 
 # Setup Nodejs dependencies
 RUN cd boombot && npm install
+
+WORKDIR "/boombot"
 
 ENTRYPOINT [ "npm" ]
 CMD [ "start" ]
