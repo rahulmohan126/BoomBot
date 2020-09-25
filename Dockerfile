@@ -2,17 +2,14 @@
 
 FROM node:14
 
-# Setup directories and files
-RUN mkdir -p /boombot
-COPY . /boombot
-
-# Bind this volume to a directory on your machine to maintain persistent data 
-# between container restarts or errors. This is highly required since the 
-# "settings.json" must be included in this volume in order to start the bot.
-VOLUME [ "/boombot/data" ]
+# Connect repo to container
+# Example usage in docker-compose:
+# volumes:
+#     - ./BoomBot:/boombot
+VOLUME [ "/boombot" ]
 
 # Setup Nodejs dependencies
-RUN npm install
+RUN cd boombot && npm install
 
-ENTRYPOINT [ "node" ]
-CMD [ "src/bot.js" ]
+ENTRYPOINT [ "npm" ]
+CMD [ "start" ]

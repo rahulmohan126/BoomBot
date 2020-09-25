@@ -69,6 +69,23 @@ class Bot extends Discord.Client {
 	}
 
 	/**
+	 * Creates data folders if they do not exist
+	 */
+	initData() {
+		if (!fs.existsSync('./data')) {
+			fs.mkdirSync('./data');
+		}
+
+		if (!fs.existsSync('./data/guild.json')) {
+			fs.writeFileSync('./data/guild.json', '{}');
+		}
+
+		if (!fs.existsSync('./data/soundboard')) {
+			fs.mkdirSync('./data/soundboard');
+		}
+	}
+
+	/**
 	 * Loads all the guild datas
 	 */
 	loadGuilds() {
@@ -397,6 +414,7 @@ class Bot extends Discord.Client {
 	 * Initializes the bot
 	 */
 	start() {
+		this.initData();
 		this.loadGuilds();
 		this.loadCommands();
 		this.loadSoundboard();
