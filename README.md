@@ -6,6 +6,8 @@ This project is a simple Discord Music bot, so you can have more control over yo
 
 This project is still in progress so report any bugs or issues and they will be fixed as soon as possible.
 
+This project has been tested using both Node.js 12 and 14 on OS X (10.15), Windows 10, and Ubuntu 20.04.
+
 ## Docker
 
 In the "Installation" section, follow instuctions until the end of "Creating a settings.json". At that point you should have everything you need to setup a docker container.
@@ -22,7 +24,7 @@ services:
             - ./my_settings.json:/boombot/settings.json # ./my_settings.json can be changed accordingly
 ```
 
-Be aware that commands (such as "stop") cannot be used while using Docker. 
+Be aware that terminal commands cannot be used while using Docker but everything else should be fully functional.
 
 ## Installation
 
