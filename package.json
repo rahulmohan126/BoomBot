@@ -18,10 +18,10 @@
   },
   "homepage": "https://github.com/rahulmohan126/BoomBot#readme",
   "dependencies": {
-    "@discordjs/opus": "^0.3.2",
-    "discord.js": "^12.3.1",
+    "@discordjs/opus": "^0.3.3",
+    "discord.js": "^12.4.1",
     "ffmpeg-static": "^4.2.7",
     "simple-youtube-api": "^5.2.1",
-    "ytdl-core": "^3.3.0"
+    "ytdl-core": "^4.0.3"
   }
 }

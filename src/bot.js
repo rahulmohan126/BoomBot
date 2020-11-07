@@ -788,7 +788,7 @@ class MusicQueue {
 			subdirectory = voiceChannel.guild.id + '/';
 		}
 
-		const dispatcher = connection.play('./data/soundboard/${subdirectory}${fileName}.mp3');
+		const dispatcher = connection.play(`./data/soundboard/${subdirectory}/${fileName}.mp3`);
 
 		// Handles disconnection or any other reason that the connection stops.
 		connection.on('disconnect', () => {
