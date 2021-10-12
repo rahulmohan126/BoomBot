@@ -5,7 +5,7 @@ module.exports = {
 		}
 		else if (guild.queue.playing) {
 			guild.queue.playing = false;
-			guild.queue.connection.dispatcher.pause();
+			guild.queue.player.pause();
 			bot.sendNotification('⏸ Music paused!', 'success', msg);
 		}
 		else {

@@ -5,7 +5,7 @@ module.exports = {
 		}
 		else if (!guild.queue.playing) {
 			guild.queue.playing = true;
-			guild.queue.connection.dispatcher.resume();
+			guild.queue.player.unpause();
 			bot.sendNotification('▶ Music resumed!', 'success', msg);
 		}
 		else {

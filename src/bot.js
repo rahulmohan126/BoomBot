@@ -2,6 +2,7 @@
 const startTime = Date.now();
 //#region  ---------------------	Packages	---------------------
 const Discord = require('discord.js');
+const DiscordVoice = require('@discordjs/voice');
 const YouTube = require('simple-youtube-api');
 const fs = require('fs');
 const ytdl = require('ytdl-core');
@@ -240,7 +241,7 @@ class Bot extends Discord.Client {
 	 * @param {String} name Command name
 	 */
 	unloadCommand(name) {
-		const directory = './src/commands/${name}.js';
+		const directory = `./commands/${name}.js`;
 
 		let command = this.commands.find(command => command.name == name);
 
@@ -389,7 +390,7 @@ class Bot extends Discord.Client {
 			Object.assign(embed, other);
 		}
 
-		msg.channel.send('', { embed });
+		msg.channel.send({ embeds: [embed] });
 	}
 
 	/**
@@ -448,7 +449,7 @@ class Guild {
 		// 1 => Most perms
 		// 2 => Basic perms
 
-		var user = this.members.guild.member(memberResolvable);
+		var user = this.members.resolve(memberResolvable);
 
 		if (this.ownerID == user.id) {
 			return 0;
@@ -556,33 +557,15 @@ class MusicQueue {
 
 		// Music informaiton
 		this.connection = null;
-		this._volume = 5;
+		this.player = null;
 		this.songs = [];
 
 		// Status information
 		this.playing = false;
 		this.looping = false;
-		this.seeking = false;
 
 		this.inUse = false;
 		this.usingSB = false;
-	}
-
-	/**
-	 * Volume getter
-	 */
-	get volume() {
-		return this._volume;
-	}
-
-	/**
-	 * Volume setter. Also changes connection dispatcher volume.
-	 */
-	set volume(volume) {
-		if (this.connection != null) {
-			this._volume = volume;
-			this.connection.dispatcher.setVolumeLogarithmic(volume);
-		}
 	}
 
 	/**
@@ -591,7 +574,11 @@ class MusicQueue {
 	async join() {
 		if (this.voice !== null) {
 			this.inUse = true;
-			this.connection = await this.voice.join();
+			this.connection = await DiscordVoice.joinVoiceChannel({
+				channelId: this.voice.id,
+				guildId: this.voice.guild.id,
+				adapterCreator: this.voice.guild.voiceAdapterCreator,
+			});
 		}
 	}
 
@@ -599,9 +586,8 @@ class MusicQueue {
 	 * Resets music queue to default settings. Except for volume, that remains the same.
 	 */
 	end() {
-		if (this.voice) {
-			this.voice.leave();
-		}
+		this.player.stop();
+		this.connection.destroy();
 
 		this.text = null;
 		this.voice = null;
@@ -611,7 +597,6 @@ class MusicQueue {
 
 		this.playing = false;
 		this.looping = false;
-		this.seeking = false;
 
 		this.inUse = false;
 	}
@@ -669,7 +654,7 @@ class MusicQueue {
 
 				this.client.log['audioStreamConnected'](msg);
 
-				this.connection.on('disconnect', () => {
+				this.connection.on('disconnected', () => {
 					this.end();
 					this.client.log['audioStreamDisconnected'](msg);
 				});
@@ -710,43 +695,39 @@ class MusicQueue {
 	}
 
 	/**
-	 * Plays the song (either from the beginning or at the seek time)
+	 * Plays the song
 	 * @param {Song} song 
-	 * @param {Number} seek 
 	 */
-	async play(song, seek = 0) {
+	async play(song) {
 		if (!song) {
 			this.end();
 			return;
 		}
 
 		// 1024 = 1 KB, 1024 x 1024 = 1MB. The highWaterMark determines how much of the stream will be preloaded.
-		// Dedicating more memory will make streams more smoother but uses more RAM. This will however not reduce "seek" delay significantly.
+		// Dedicating more memory will make streams more smoother but uses more RAM.
 		const stream = ytdl(song.url, {
-			quality: 'highestaudio', highWaterMark: 1024 * 1024 * 2
+			filter: 'audioonly',
+			quality: 'highestaudio',
+			highWaterMark: 1024 * 1024 * 2
 		});
 
-		const dispatcher = this.connection.play(stream, { seek: seek });
+		this.player = DiscordVoice.createAudioPlayer();
+		this.player.play(DiscordVoice.createAudioResource(stream));
+		this.connection.subscribe(this.player);
 
-		dispatcher.on('start', () => {
-			// Creates false start time for the song to keep queue time consistent
-			if (seek !== 0) song.startTime = Date.now() - (seek * 1000);
-			else song.startTime = Date.now();
-		})
+		this.connection.on('error', (err) => {
+			console.log(err);
+		});
 
-		dispatcher.on('finish', () => {
-			if (this.seeking) {
-				this.seeking = false;
-				return;
-			}
+		song.startTime = Date.now();
+
+		this.player.on(DiscordVoice.AudioPlayerStatus.Idle, () => {
 
 			// Plays the next song (if looped, the queue will remian unchanged and continue playing the first item)
 			if (!this.looping) this.songs.shift();
 			this.play(this.songs[0]);
 		});
-
-		dispatcher.on('error', error => console.error(error));
-		dispatcher.setVolumeLogarithmic(this._volume / 5);
 
 		bot.sendNotification(`🎶 Start playing: **${song.title}**`, 'success', {
 			'channel': this.text, 'member': song.requestedBy
@@ -773,12 +754,13 @@ class MusicQueue {
 
 			// Prevents errors caused by instantly leaving and joining a channel
 			// 500ms is an arbitrary amount of time, just ensure it is not too close to 0.
-			await sleep(500);
+			// await sleep(500);
 		}
 
-		const connection = await voiceChannel.join();
+		this.voice = voiceChannel;
+		await this.join();
 
-		if (!connection) {
+		if (!this.connection) {
 			this.client.sendNotification('Cannot join this voice channel', 'error', msg);
 			return;
 		}
@@ -788,19 +770,14 @@ class MusicQueue {
 			subdirectory = voiceChannel.guild.id + '/';
 		}
 
-		const dispatcher = connection.play(`./data/soundboard/${subdirectory}/${fileName}.mp3`);
-
-		// Handles disconnection or any other reason that the connection stops.
-		connection.on('disconnect', () => {
-			this.usingSB = false;
-		})
+		this.player = DiscordVoice.createAudioPlayer();
+		this.player.play(DiscordVoice.createAudioResource(`./data/soundboard/${subdirectory}/${fileName}.mp3`));
+		this.connection.subscribe(this.player);
 
 		// Leaves voice channel after the defined delay so o that the soundboard effect does not cut abruptly
-		dispatcher.on('finish', async function () {
-			const SBDelay = 500; // ms
-			await sleep(SBDelay);
-
-			voiceChannel.leave();
+		this.player.on(DiscordVoice.AudioPlayerStatus.Idle, () => {
+			this.connection.destroy();
+			this.end();
 			this.usingSB = false;
 		});
 	}
@@ -841,7 +818,7 @@ class Song {
 //#region  ---------------------	Setup		---------------------
 
 const config = JSON.parse(fs.readFileSync(`./settings.json`));
-const bot = new Bot({ autoReconnect: true }, config);
+const bot = new Bot({ autoReconnect: true, intents: 32767 }, config);
 
 const consoleListener = readline.createInterface({
 	input: process.stdin,
@@ -854,13 +831,13 @@ const consoleListener = readline.createInterface({
 
 bot.on('ready', () => {
 	bot.start();
-	bot.user.setActivity(`over ${bot.guilds.cache.array().length} servers...`, { type: 'WATCHING' });
+	bot.user.setActivity(`over ${bot.guilds.cache.size} servers...`, { type: 'WATCHING' });
 
 	const startuptime = Date.now() - startTime;
-	console.log(`Ready to begin! Serving in ${bot.guilds.cache.array().length} servers. Startup time: ${startuptime}ms`);
+	console.log(`Ready to begin! Serving in ${bot.guilds.cache.size} servers. Startup time: ${startuptime}ms`);
 });
 
-bot.on('message', msg => {
+bot.on('messageCreate', msg => {
 	const guild = bot.getGuild(msg.guild);
 
 	if (msg.author.id !== bot.ID && guild.validMessage(msg)) {
@@ -896,7 +873,7 @@ bot.on('disconnected', () => {
 });
 
 bot.on('guildCreate', guild => {
-	bot.user.setActivity(`over ${bot.guilds.array().length} servers...`, { type: 'WATCHING' });
+	bot.user.setActivity(`over ${bot.guilds.cache.size} servers...`, { type: 'WATCHING' });
 	bot.getGuild(guild); // Initializes a new guild
 	if (LOGGING) console.log(`New guild: ${guild.name}`);
 })

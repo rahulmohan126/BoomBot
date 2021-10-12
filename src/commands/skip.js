@@ -4,8 +4,7 @@ module.exports = {
 			bot.sendNotification('There is nothing playing that I could skip for you.', 'error', msg);
 		}
 		else {
-			guild.queue.connection.dispatcher.end();
-
+			guild.queue.player.stop();
 			bot.sendNotification('▶︎▶︎ Music skipped!', 'success', msg);
 		}
 	},
