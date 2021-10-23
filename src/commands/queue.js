@@ -18,14 +18,12 @@ module.exports = {
 			}
 
 			bot.sendNotification(`
-__**Song Queue:**__
-
 ${songsInQueueStr}
 
 **Looped:** ${guild.queue.loop ? 'Looped' : 'Not looped'}
 **Now playing:** ${guild.queue.songs[0].title}
 **Time Left in Queue:** ${guild.queue.timeToString(guild.queue.totalTime)}
-		`, 'info', msg);
+		`, 'info', msg, [], 'Song Queue');
 		}
 	},
 	help: 'Gets all the songs in the queue.',

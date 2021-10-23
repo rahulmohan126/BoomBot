@@ -1,5 +1,3 @@
-const { GuildEmoji } = require("discord.js");
-
 module.exports = {
 	main: function (bot, guild, msg) {
 		if (!guild.queue.inUse) {
