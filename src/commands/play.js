@@ -50,7 +50,6 @@ module.exports = {
 			catch (error) {
 				try {
 					var videos = await bot.youtube.searchVideos(searchString, 10);
-					console.log(videos[0])
 
 					// No results for the given search query will throw an error,
 					// it will automatically be caught by the SOS error message.
