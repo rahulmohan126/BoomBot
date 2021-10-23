@@ -12,6 +12,7 @@ WORKDIR "/boombot"
 
 COPY src src
 COPY package.json package.json
+COPY icon.jpg icon.jpg
 
 # Setup Nodejs dependencies
 RUN npm install
