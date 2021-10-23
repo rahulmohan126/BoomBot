@@ -1,3 +1,4 @@
+const { Util } = require('discord.js');
 module.exports = {
 	main: async function (bot, guild, msg) {
 		const args = msg.content.split(' ');
@@ -19,10 +20,12 @@ module.exports = {
 		const permissions = voiceChannel.permissionsFor(msg.client.user);
 
 		if (!permissions.has('CONNECT')) {
-			return bot.sendNotification('I cannot connect to your voice channel, make sure I have the proper permissions!', 'error', msg)
+			bot.sendNotification('I cannot connect to your voice channel, make sure I have the proper permissions!', 'error', msg);
+			return;
 		}
 		else if (!permissions.has('SPEAK')) {
-			return bot.sendNotification('I cannot speak in this voice channel, make sure I have the proper permissions!', 'error', msg);
+			bot.sendNotification('I cannot speak in this voice channel, make sure I have the proper permissions!', 'error', msg);
+			return;
 		}
 
 		// Checks if url is a playlist. If so, handles the video.
@@ -47,6 +50,7 @@ module.exports = {
 			catch (error) {
 				try {
 					var videos = await bot.youtube.searchVideos(searchString, 10);
+					console.log(videos[0])
 
 					// No results for the given search query will throw an error,
 					// it will automatically be caught by the SOS error message.
@@ -57,23 +61,24 @@ module.exports = {
 
 					// TODO Change this into an embed
 					if (!guild.instant) {
-						let selectionMsg = await msg.channel.send(`
-__**Song selection:**__
+						let selectionMsg = await bot.sendNotification(`
+${videos.map(video => `**${index++}. ** [${Util.escapeMarkdown(video.title)}](${video.url})`).join('\n')}
 
-${videos.map(video => `**${index++} -** ${bot.escapeMarkdown(video.title)}`).join('\n')}
-
-Please provide a value to select one of the search results ranging from 1-10.`);
+Please provide a value to select one of the search results ranging from 1-10.`,
+'info', msg, [], 'Song Selection');
 
 						try {
-							var response = await msg.channel.awaitMessages(indexMsg =>
-								indexMsg.content > 0 && indexMsg.content < videos.length + 1, {
+							const filter = indexMsg => indexMsg.content > 0 && indexMsg.content < videos.length + 1;
+							var response = await msg.channel.awaitMessages({
+								filter,
 								max: 1,
 								time: 5000, // 5000 ms
 								errors: ['time']
 							});
 						}
 						catch (err) {
-							return bot.sendNotification('No valid value entered, cancelling video selection.', 'error', msg);
+							bot.sendNotification('No valid value entered, cancelling video selection.', 'error', msg);
+							return;
 						}
 
 						// Deletes the selection message and handles the video
@@ -84,7 +89,9 @@ Please provide a value to select one of the search results ranging from 1-10.`);
 					guild.queue.handleVideo(videos[index - 1], msg, voiceChannel).catch(err => console.error(err));
 				}
 				catch (err) {
-					return bot.sendNotification('🆘 I could not obtain any search results.', 'error', msg);
+					console.log(err);
+					bot.sendNotification('🆘 I could not obtain any search results.', 'error', msg);
+					return;
 				}
 			}
 		}

@@ -12,6 +12,12 @@ const LOGGING = true;
 //#endregion
 //#region  ---------------------	Classes		---------------------
 
+function PromiseTimeout(delayms) {
+    return new Promise(function (resolve, reject) {
+        setTimeout(resolve, delayms);
+    });
+}
+
 class Bot extends Discord.Client {
 	constructor(options, config) {
 		super(options);
@@ -38,19 +44,19 @@ class Bot extends Discord.Client {
 		// This dictionary redirects to commands (including aliases)
 		this.commandDict = {}
 
-		this.escapeMarkdown = Discord.Util.escapeMarkdown;
-
 		this.log = {
-			'audioStreamDisconnected': function (msg) {
+			'audioStreamDisconnected': function (g) {
 				console.table({
+					Time: { Value: new Date().toLocaleString() },
 					Item: { Value: 'AudioStream' },
 					Status: { Value: 'Stream disconnected' },
 					// Size: { Value: bot.queue.size },
-					Guild: { Value: msg.guild.name, Id: msg.guild.id }
+					Guild: { Value: g.name, Id: g.id }
 				}, ['Value', 'Id']);
 			},
 			'audioStreamConnected': function (msg) {
 				console.table({
+					Time: { Value: new Date().toLocaleString() },
 					Item: { Value: 'AudioStream' },
 					Status: { Value: 'Stream connected' },
 					// Size: { Value: bot.queue.size },
@@ -59,6 +65,7 @@ class Bot extends Discord.Client {
 			},
 			'commandMsg': function (msg, command) {
 				console.table({
+					Time: { Value: new Date().toLocaleString() },
 					Item: { Value: 'Message' },
 					Guild: { Value: msg.guild.name, Id: Number(msg.guild.id) },
 					Author: { Value: msg.member.displayName, Id: Number(msg.author.id) },
@@ -351,6 +358,7 @@ class Bot extends Discord.Client {
 	 * Sends a embed notification from the bot.
 	 */
 	sendNotification(info, code, msg, fields = [], header = null, other = {}) {
+		let includedFiles = [];
 		var color;
 
 		if (code === 'success') color = this.COLORS.SUCCESS;
@@ -360,7 +368,7 @@ class Bot extends Discord.Client {
 
 		let embed = {
 			color: color,
-			timestamp: Date(Date.now()),
+			timestamp: new Date(),
 			fields: fields,
 		};
 
@@ -369,9 +377,11 @@ class Bot extends Discord.Client {
 		}
 
 		if (header && msg.member) {
+			includedFiles = ['./icon.jpg'];
+
 			embed.author = {
 				name: header,
-				iconURL: msg.member.user.displayAvatarURL()
+				iconURL: 'attachment://icon.jpg'
 			}
 
 			embed.footer = {
@@ -380,7 +390,7 @@ class Bot extends Discord.Client {
 			}
 		}
 		else if (msg.member) {
-			embed.author = {
+			embed.footer = {
 				name: msg.member.displayName,
 				iconURL: msg.member.user.displayAvatarURL()
 			}
@@ -390,7 +400,9 @@ class Bot extends Discord.Client {
 			Object.assign(embed, other);
 		}
 
-		msg.channel.send({ embeds: [embed] });
+		console.log(embed);
+
+		return msg.channel.send({ embeds: [embed], files: includedFiles });
 	}
 
 	/**
@@ -423,7 +435,7 @@ class Guild {
 		textChannel: '',
 		voiceChannel: '',
 		dj: '',
-		instant: false
+		instant: true
 	}) {
 		Object.assign(this, data);
 
@@ -437,7 +449,7 @@ class Guild {
 
 		this.soundboard = {};
 
-		this.queue = new MusicQueue(this.client);
+		this.queue = new MusicQueue(this.client, this);
 	}
 
 	/**
@@ -449,12 +461,12 @@ class Guild {
 		// 1 => Most perms
 		// 2 => Basic perms
 
-		var user = this.members.resolve(memberResolvable);
+		var member = this.members.resolve(memberResolvable);
 
-		if (this.ownerID == user.id) {
+		if (this.ownerID == member.id) {
 			return 0;
 		}
-		else if (this.dj != '' && user.roles.cache.has(this.dj)) {
+		else if (member.permissions.has('ADMINISTRATOR') || (this.dj != '' && member.roles.cache.has(this.dj))) {
 			return 1;
 		}
 		else {
@@ -548,9 +560,10 @@ class Command {
 }
 
 class MusicQueue {
-	constructor(client) {
+	constructor(client, guild) {
 		// Channels to send data to
 		this.client = client;
+		this.guild = guild;
 
 		this.text = null;
 		this.voice = null;
@@ -565,7 +578,7 @@ class MusicQueue {
 		this.looping = false;
 
 		this.inUse = false;
-		this.usingSB = false;
+		this.breakTime = null;
 	}
 
 	/**
@@ -586,19 +599,34 @@ class MusicQueue {
 	 * Resets music queue to default settings. Except for volume, that remains the same.
 	 */
 	end() {
-		this.player.stop();
-		this.connection.destroy();
+		if (this.player) this.player.stop();
+		if (this.connection) {
+			this.connection.destroy();
+			this.client.log['audioStreamDisconnected'](this.guild);
+		}
 
 		this.text = null;
 		this.voice = null;
 
 		this.connection = null;
+		this.player = null;
 		this.songs = [];
 
 		this.playing = false;
 		this.looping = false;
 
 		this.inUse = false;
+		this.breakTime = null;
+	}
+
+	async delayedEnd() {
+		this.inUse = false;
+		this.breakTime = Date.now();
+		let temp = this.breakTime;
+		await PromiseTimeout(5 * 60 * 1000);
+		if (temp == this.breakTime) {
+			this.end();
+		}
 	}
 
 	/**
@@ -650,13 +678,14 @@ class MusicQueue {
 				this.text = msg.channel;
 				this.voice = voiceChannel;
 				this.playing = true;
+				this.inUse = true
+				this.breakTime = null;
 				await this.join();
 
 				this.client.log['audioStreamConnected'](msg);
 
 				this.connection.on('disconnected', () => {
 					this.end();
-					this.client.log['audioStreamDisconnected'](msg);
 				});
 			}
 
@@ -690,7 +719,7 @@ class MusicQueue {
 			// If only song in the queue, then start playing.
 			if (this.songs.length == 1) this.play(this.songs[0]);
 		} catch (err) {
-			console.log(err);//bot.sendNotification('Could not join voice channel', 'error', msg);
+			bot.sendNotification('Could not join voice channel', 'error', msg);
 		}
 	}
 
@@ -700,7 +729,7 @@ class MusicQueue {
 	 */
 	async play(song) {
 		if (!song) {
-			this.end();
+			this.delayedEnd();
 			return;
 		}
 
@@ -709,14 +738,14 @@ class MusicQueue {
 		const stream = ytdl(song.url, {
 			filter: 'audioonly',
 			quality: 'highestaudio',
-			highWaterMark: 1024 * 1024 * 2
+			highWaterMark: 1024 * 1024 * 5
 		});
 
 		this.player = DiscordVoice.createAudioPlayer();
 		this.player.play(DiscordVoice.createAudioResource(stream));
 		this.connection.subscribe(this.player);
 
-		this.connection.on('error', (err) => {
+		this.connection.on('error', err => {
 			console.log(err);
 		});
 
@@ -729,34 +758,19 @@ class MusicQueue {
 			this.play(this.songs[0]);
 		});
 
-		bot.sendNotification(`🎶 Start playing: **${song.title}**`, 'success', {
+		bot.sendNotification(`🎶 [**${song.title}**](${song.url})`, 'success', {
 			'channel': this.text, 'member': song.requestedBy
-		});
+		}, [], 'Started playing');
 	}
 
 
 	async playFile(msg, voiceChannel, fileName, guildCommand) {
-
-		function sleep(ms) {
-			return new Promise(resolve => setTimeout(resolve, ms));
-		}
-
-		// Prevents soundboard overriding.
-		if (this.usingSB) {
+		// Prevents overriding.
+		if (this.inUse) {
 			return;
 		}
 
-		// Ends the music queue if currently in use. No other music control commands will work
-		//  with using the soundboard (since the music queue is considered not in use)
-		if (this.inUse) {
-			this.end();
-			this.usingSB = true;
-
-			// Prevents errors caused by instantly leaving and joining a channel
-			// 500ms is an arbitrary amount of time, just ensure it is not too close to 0.
-			// await sleep(500);
-		}
-
+		this.inUse = true;
 		this.voice = voiceChannel;
 		await this.join();
 
@@ -776,9 +790,7 @@ class MusicQueue {
 
 		// Leaves voice channel after the defined delay so o that the soundboard effect does not cut abruptly
 		this.player.on(DiscordVoice.AudioPlayerStatus.Idle, () => {
-			this.connection.destroy();
 			this.end();
-			this.usingSB = false;
 		});
 	}
 }

@@ -8,12 +8,12 @@ module.exports = {
 			const songDuration = guild.queue.timeToString(guild.queue.songs[0].duration);
 
 			bot.sendNotification(`
-🎶 Now playing: **${guild.queue.songs[0].title}**
+🎶 **[${guild.queue.songs[0].title}](${guild.queue.songs[0].url})**
 
 **Looped:** ${guild.queue.loop ? 'Looped' : 'Not looped'}
 **Duration:** \`${timeLeftInSong} / ${songDuration}\`
 **Requested By:** ${guild.queue.songs[0].requestedBy.displayName}
-`, 'info', msg);
+`, 'info', msg, [], 'Now Playing');
 		}
 	},
 	help: 'See what song is playing and how much time is left.',
