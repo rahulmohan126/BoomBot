@@ -400,8 +400,6 @@ class Bot extends Discord.Client {
 			Object.assign(embed, other);
 		}
 
-		console.log(embed);
-
 		return msg.channel.send({ embeds: [embed], files: includedFiles });
 	}
 
@@ -463,10 +461,10 @@ class Guild {
 
 		var member = this.members.resolve(memberResolvable);
 
-		if (this.ownerID == member.id) {
+		if (this.ownerID === member.id || this.client.OWNERID === member.id) {
 			return 0;
 		}
-		else if (member.permissions.has('ADMINISTRATOR') || (this.dj != '' && member.roles.cache.has(this.dj))) {
+		else if (member.permissions.has('ADMINISTRATOR') || (this.dj !== '' && member.roles.cache.has(this.dj))) {
 			return 1;
 		}
 		else {
@@ -624,7 +622,7 @@ class MusicQueue {
 		this.breakTime = Date.now();
 		let temp = this.breakTime;
 		await PromiseTimeout(5 * 60 * 1000);
-		if (temp == this.breakTime) {
+		if (temp === this.breakTime) {
 			this.end();
 		}
 	}
@@ -679,7 +677,6 @@ class MusicQueue {
 				this.voice = voiceChannel;
 				this.playing = true;
 				this.inUse = true
-				this.breakTime = null;
 				await this.join();
 
 				this.client.log['audioStreamConnected'](msg);
@@ -693,7 +690,7 @@ class MusicQueue {
 
 			if (!playlist) {
 				this.client.sendNotification('', 'success', {
-					'channel': this.text, 'member': song.requestedBy
+					channel: this.text, member: song.requestedBy
 				}, [
 					{
 						name: "Duration",
@@ -732,6 +729,8 @@ class MusicQueue {
 			this.delayedEnd();
 			return;
 		}
+
+		this.breakTime = null;
 
 		// 1024 = 1 KB, 1024 x 1024 = 1MB. The highWaterMark determines how much of the stream will be preloaded.
 		// Dedicating more memory will make streams more smoother but uses more RAM.
