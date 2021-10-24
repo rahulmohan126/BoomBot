@@ -731,6 +731,7 @@ class MusicQueue {
 		}
 
 		this.breakTime = null;
+		this.inUse = true;
 
 		// 1024 = 1 KB, 1024 x 1024 = 1MB. The highWaterMark determines how much of the stream will be preloaded.
 		// Dedicating more memory will make streams more smoother but uses more RAM.
