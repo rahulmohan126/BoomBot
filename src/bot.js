@@ -702,7 +702,7 @@ class MusicQueue {
 					},
 					{
 						name: "Time Until Played",
-						value: `\`${this.timeToString(this.songs.length == 1 ? 0 : this.totalTime - song.duration)}\``,
+						value: `\`${this.timeToString(!this.nowPlaying ? 0 : this.totalTime - song.duration)}\``,
 						inline: true
 					},
 					{
@@ -716,8 +716,8 @@ class MusicQueue {
 				});
 			}
 
-			// If only song in the queue, then start playing.
-			if (this.songs.length == 1) this.play(this.songs[0]);
+			// If no song playing, play this song.
+			if (!this.nowPlaying) this.play(this.songs[0]);
 		} catch (err) {
 			bot.sendNotification('Could not join voice channel', 'error', msg);
 		}
