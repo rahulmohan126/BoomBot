@@ -1,6 +1,8 @@
 module.exports = {
 	main: function (bot, guild, msg) {
-		if (!guild.queue.inUse) {
+		// Error will not be triggered if the bot is in delayedEnd as determined
+		// by if there is a break time or not
+		if (!guild.queue.inUse && !guild.queue.breakTime) {
 			bot.sendNotification('There is no music playing at the moment...', 'error', msg);
 		}
 		else {

@@ -4,15 +4,19 @@ module.exports = {
 			bot.sendNotification('There is no music playing at the moment...', 'error', msg);
 		}
 		else {
-			const timeLeftInSong = guild.queue.timeToString(Date.now() - guild.queue.songs[0].startTime);
-			const songDuration = guild.queue.timeToString(guild.queue.songs[0].duration);
+			const ratio = (Date.now() - guild.queue.nowPlaying.startTime) / guild.queue.nowPlaying.duration;
+			const barLength = 20;
+			const timeLeftInSong = guild.queue.timeToString(Date.now() - guild.queue.nowPlaying.startTime);
+			const songDuration = guild.queue.timeToString(guild.queue.nowPlaying.duration);
 
 			bot.sendNotification(`
-🎶 **[${guild.queue.songs[0].title}](${guild.queue.songs[0].url})**
+🎶 **[${guild.queue.nowPlaying.title}](${guild.queue.nowPlaying.url})**
+
+|${'-'.repeat(Math.round(ratio * barLength))}🔘${'-'.repeat(Math.round((1 - ratio) * barLength))}|
 
 **Looped:** ${guild.queue.loop ? 'Looped' : 'Not looped'}
 **Duration:** \`${timeLeftInSong} / ${songDuration}\`
-**Requested By:** ${guild.queue.songs[0].requestedBy.displayName}
+**Requested By:** ${guild.queue.nowPlaying.requestedBy.displayName}
 `, 'info', msg, [], 'Now Playing');
 		}
 	},

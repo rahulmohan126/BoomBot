@@ -21,7 +21,7 @@ module.exports = {
 ${songsInQueueStr}
 
 **Looped:** ${guild.queue.loop ? 'Looped' : 'Not looped'}
-**Now playing:** ${guild.queue.songs[0].title}
+**Now playing:** ${guild.queue.nowPlaying.title}
 **Time Left in Queue:** ${guild.queue.timeToString(guild.queue.totalTime)}
 		`, 'info', msg, [], 'Song Queue');
 		}

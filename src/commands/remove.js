@@ -6,8 +6,8 @@ module.exports = {
 		}
 		else {
             // TODO Find optimal value for threshold
-            const MATCH_THRESHOLD = 0.2;
-            let songTitles = guild.queue.songs.map(s => s.title);
+			const MATCH_THRESHOLD = 0.2;
+            let songTitles = guild.queue.songs.map(s => s.title.toLowerCase());
             let matches = Difflib.getCloseMatches(msg.content, songTitles, 1, MATCH_THRESHOLD);
             if (matches.length > 0) {
                 guild.queue.songs = guild.queue.songs.filter(s => s.title != matches[0]);
