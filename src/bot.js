@@ -577,6 +577,7 @@ class MusicQueue {
 
 		this.inUse = false;
 		this.breakTime = null;
+		this.nowPlaying = null;
 	}
 
 	/**
@@ -615,6 +616,7 @@ class MusicQueue {
 
 		this.inUse = false;
 		this.breakTime = null;
+		this.nowPlaying = null;
 	}
 
 	async delayedEnd() {
@@ -647,8 +649,9 @@ class MusicQueue {
 	 * Returns the remaining play time of the queue
 	 */
 	get totalTime() {
+		if (this.songs.length == 0 && !this.nowPlaying) return 0;
 		var totalTime = this.songs.reduce((acc, cur) => acc + cur.duration, 0);
-		totalTime -= Date.now() - this.songs[0].startTime;
+		totalTime += this.nowPlaying.duration - (Date.now() - this.nowPlaying.startTime);
 		return totalTime;
 	}
 
@@ -732,6 +735,8 @@ class MusicQueue {
 
 		this.breakTime = null;
 		this.inUse = true;
+		this.nowPlaying = song;
+		this.songs.shift();
 
 		// 1024 = 1 KB, 1024 x 1024 = 1MB. The highWaterMark determines how much of the stream will be preloaded.
 		// Dedicating more memory will make streams more smoother but uses more RAM.
@@ -754,7 +759,7 @@ class MusicQueue {
 		this.player.on(DiscordVoice.AudioPlayerStatus.Idle, () => {
 
 			// Plays the next song (if looped, the queue will remian unchanged and continue playing the first item)
-			if (!this.looping) this.songs.shift();
+			if (this.looping) this.songs.add(this.nowPlaying);
 			this.play(this.songs[0]);
 		});
 
