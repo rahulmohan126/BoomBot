@@ -10,7 +10,7 @@ module.exports = {
 			guild.prefix = arg;
 			guild.save();
 
-			bot.sendNotification(`The new prefix is ${guild.prefix}.`, 'success', msg);
+			bot.sendNotification(`The new prefix is "${guild.prefix}".`, 'success', msg);
 		}
 		else {
 			bot.sendNotification('Only the guild owner can change the prefix.', 'error', msg);
