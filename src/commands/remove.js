@@ -10,8 +10,9 @@ module.exports = {
             let songTitles = guild.queue.songs.map(s => s.title.toLowerCase());
             let matches = Difflib.getCloseMatches(msg.content, songTitles, 1, MATCH_THRESHOLD);
             if (matches.length > 0) {
-                guild.queue.songs = guild.queue.songs.filter(s => s.title != matches[0]);
-                bot.sendNotification(`Removed ${matches[0]} from the queue.`, 'success', msg);
+				let actualSong = guild.queue.songTitles.filter(s => s.title.toLowerCase() == matches[0])[0].title;
+                guild.queue.songs = guild.queue.songs.filter(s => s.title !== actualSong);
+                bot.sendNotification(`Removed "${actualSong}" from the queue.`, 'success', msg);
             }
 			else bot.sendNotification('Sorry, couldn\'t find a song with that name in the queue.', 'error', msg);
 		}
