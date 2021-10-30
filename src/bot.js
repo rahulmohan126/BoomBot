@@ -621,6 +621,7 @@ class MusicQueue {
 
 	async delayedEnd() {
 		this.inUse = false;
+		this.nowPlaying = null;
 		this.breakTime = Date.now();
 		let temp = this.breakTime;
 		await PromiseTimeout(5 * 60 * 1000);
