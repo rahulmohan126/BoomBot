@@ -95,7 +95,7 @@ Please provide a value to select one of the search results ranging from 1-10.`,
 			}
 		}
 	},
-	help: 'Play any bot.youtube video, use keywords, direct links, or playlists.',
+	help: 'Play any Youtube video, use keywords, direct links, or playlists.',
 	usage: 'play [keyword | video link | playlist link]',
 	module: 'music'
 };
