@@ -739,16 +739,30 @@ class MusicQueue {
 		this.nowPlaying = song;
 		this.songs.shift();
 
-		// 1024 = 1 KB, 1024 x 1024 = 1MB. The highWaterMark determines how much of the stream will be preloaded.
-		// Dedicating more memory will make streams more smoother but uses more RAM.
-		const stream = ytdl(song.url, {
-			filter: 'audioonly',
-			quality: 'highestaudio',
-			highWaterMark: 1024 * 1024 * 5
-		});
+		try {
+			// 1024 = 1 KB, 1024 x 1024 = 1MB. The highWaterMark determines how much of the stream will be preloaded.
+			// Dedicating more memory will make streams more smoother but uses more RAM.
+			const stream = ytdl(song.url, {
+				filter: 'audioonly',
+				quality: 'highestaudio',
+				highWaterMark: 1024 * 1024 * 5
+			});
 
-		this.player = DiscordVoice.createAudioPlayer();
-		this.player.play(DiscordVoice.createAudioResource(stream));
+			this.player = DiscordVoice.createAudioPlayer();
+			this.player.play(DiscordVoice.createAudioResource(stream));
+		}
+		catch (err) {
+			// YTDL issue that causes video stream to crash the program. Cannot
+			// be fixed myself, so for now, just catch the error and move to the
+			// next item in the queue.
+			bot.sendNotification(`Sorry, there was an error processing "${this.nowPlaying.title}", moving to the next song in the queue`,'error', {
+				'channel': this.text, 'member': song.requestedBy
+			});
+			this.looping = false;
+			this.play(this.songs[0]);
+			return;
+		}
+
 		this.connection.subscribe(this.player);
 
 		this.connection.on('error', err => {
