@@ -751,7 +751,7 @@ class MusicQueue {
 		this.player.play(DiscordVoice.createAudioResource(stream));
 		this.connection.subscribe(this.player);
 
-		stream.removeListener('error', stream.listeners('error')[2]);
+		stream.removeListener('error', stream.listeners('error')[0]);
 		stream.on('error', () => {
 			// YTDL issue that causes video stream to crash the program. Cannot
 			// be fixed myself, so for now, just catch the error and move to the
@@ -761,6 +761,8 @@ class MusicQueue {
 			});
 			this.looping = false;
 			stream.destroy();
+			this.player.stop();
+			this.play(this.songs[0]);
 		});
 
 		this.connection.on('error', err => {
@@ -770,7 +772,6 @@ class MusicQueue {
 		song.startTime = Date.now();
 
 		this.player.on(DiscordVoice.AudioPlayerStatus.Idle, () => {
-
 			// Plays the next song (if looped, the queue will remian unchanged and continue playing the first item)
 			if (this.looping) this.songs.unshift(this.nowPlaying);
 			this.play(this.songs[0]);
