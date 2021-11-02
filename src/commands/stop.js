@@ -13,5 +13,6 @@ module.exports = {
 	},
 	help: 'Stop the current song and clears song queue',
 	usage: 'stop',
-	module: 'music'
+	module: 'music',
+	keywords: 'disconnect'
 };
