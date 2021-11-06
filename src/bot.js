@@ -773,8 +773,8 @@ class MusicQueue {
 
 		this.player.on(DiscordVoice.AudioPlayerStatus.Idle, () => {
 			// Plays the next song (if looped, the queue will remian unchanged and continue playing the first item)
-			if (this.looping) this.songs.unshift(this.nowPlaying);
-			this.play(this.songs[0]);
+			if (this.looping) this.play(this.nowPlaying);
+			else this.play(this.songs[0]);
 		});
 
 		bot.sendNotification(`🎶 [**${song.title}**](${song.url})`, 'success', {
