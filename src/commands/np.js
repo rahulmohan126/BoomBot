@@ -14,7 +14,7 @@ module.exports = {
 
 |${'-'.repeat(Math.round(ratio * barLength))}🔘${'-'.repeat(Math.round((1 - ratio) * barLength))}|
 
-**Looped:** ${guild.queue.loop ? 'Looped' : 'Not looped'}
+**Looped:** ${guild.queue.looping ? 'Looped' : 'Not looped'}
 **Duration:** \`${timeLeftInSong} / ${songDuration}\`
 **Requested By:** ${guild.queue.nowPlaying.requestedBy.displayName}
 `, 'info', msg, [], 'Now Playing');
