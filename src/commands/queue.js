@@ -20,7 +20,7 @@ module.exports = {
 			bot.sendNotification(`
 ${songsInQueueStr}
 
-**Looped:** ${guild.queue.loop ? 'Looped' : 'Not looped'}
+**Looped:** ${guild.queue.looping ? 'Looped' : 'Not looped'}
 **Now playing:** ${guild.queue.nowPlaying.title}
 **Time Left in Queue:** ${guild.queue.timeToString(guild.queue.totalTime)}
 		`, 'info', msg, [], 'Song Queue');
