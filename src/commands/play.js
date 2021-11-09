@@ -6,6 +6,12 @@ module.exports = {
 		const url = args[0] ? args[0].replace(/<(.+)>/g, '$1') : '';
 		const voiceChannel = msg.member.voice.channel;
 
+		// Checks if a search string exists.
+		if (searchString === '') {
+			bot.sendNotification('Please enter a search query or link to play a song', 'error', msg);
+			return;
+		}
+
 		// Checks if voice channel is valid (if any)
 		if (!voiceChannel) {
 			bot.sendNotification('Voice channel required in order to start playing music', 'error', msg);
