@@ -636,8 +636,6 @@ class MusicQueue {
 	 * @returns {String}
 	 */
 	timeToString(epochTime) {
-		if (epochTime === -1) return 'LIVE';
-
 		var returnStr = new Date(epochTime).toUTCString().split(' ')[4];
 
 		// Removes hour section if not necessary
@@ -705,7 +703,7 @@ class MusicQueue {
 					},
 					{
 						name: "Time Until Played",
-						value: `\`${this.timeToString(!this.nowPlaying ? 0 : (this.totalTime - song.duration + 1))}\``,
+						value: `\`${this.timeToString(!this.nowPlaying ? 0 : (this.totalTime - song.duration))}\``,
 						inline: true
 					},
 					{
@@ -747,7 +745,10 @@ class MusicQueue {
 		const stream = ytdl(song.url, {
 			filter: 'audioonly',
 			quality: 'highestaudio',
-			highWaterMark: 1024 * 1024 * 5
+			highWaterMark: 1024 * 1024 * 5,
+			format: {
+				isLive: false
+			}
 		});
 
 		this.player = DiscordVoice.createAudioPlayer();
@@ -833,8 +834,6 @@ class Song {
 	 * @param {String} duration 
 	 */
 	calculateSongDuration(duration) {
-		if (duration === 'P0D') return -1;
-
 		const value_map = {
 			'S': 1,
 			'M': 60,
