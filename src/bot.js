@@ -636,6 +636,8 @@ class MusicQueue {
 	 * @returns {String}
 	 */
 	timeToString(epochTime) {
+		if (epochTime === -1) return 'LIVE';
+
 		var returnStr = new Date(epochTime).toUTCString().split(' ')[4];
 
 		// Removes hour section if not necessary
@@ -703,7 +705,7 @@ class MusicQueue {
 					},
 					{
 						name: "Time Until Played",
-						value: `\`${this.timeToString(!this.nowPlaying ? 0 : this.totalTime - song.duration)}\``,
+						value: `\`${this.timeToString(!this.nowPlaying ? 0 : (this.totalTime - song.duration + 1))}\``,
 						inline: true
 					},
 					{
@@ -831,15 +833,21 @@ class Song {
 	 * @param {String} duration 
 	 */
 	calculateSongDuration(duration) {
-		const letter = ['S', 'M', 'H'];
-		const value = [1, 60, 3600];
+		if (duration === 'P0D') return -1;
+
+		const value_map = {
+			'S': 1,
+			'M': 60,
+			'H': 3600,
+			'D': 86400
+		};
 		const durationComponents = duration.slice(2).split(/(.+?[A-Z])/g);
 
 		var time = 0;
 
 		durationComponents.forEach(element => {
 			if (element != '') {
-				time += parseInt(element.slice(0, element.length - 1)) * value[letter.indexOf(element[element.length - 1])];
+				time += parseInt(element.slice(0, element.length - 1)) * value_map[element[element.length - 1]];
 			}
 		});
 		return time * 1000;

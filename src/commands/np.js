@@ -4,6 +4,18 @@ module.exports = {
 			bot.sendNotification('There is no music playing at the moment...', 'error', msg);
 		}
 		else {
+			if (guild.queue.nowPlaying.duration === -1) {
+				bot.sendNotification(`
+🎶 **[${guild.queue.nowPlaying.title}](${guild.queue.nowPlaying.url})**
+
+LIVE
+
+**Looped:** ${guild.queue.looping ? 'Looped' : 'Not looped'}
+**Requested By:** ${guild.queue.nowPlaying.requestedBy.displayName}
+`, 'info', msg, [], 'Now Playing');
+				return;
+			}
+
 			const ratio = (Date.now() - guild.queue.nowPlaying.startTime) / guild.queue.nowPlaying.duration;
 			const barLength = 20;
 			const timeLeftInSong = guild.queue.timeToString(Date.now() - guild.queue.nowPlaying.startTime);
