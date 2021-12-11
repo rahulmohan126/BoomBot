@@ -745,10 +745,7 @@ class MusicQueue {
 		const stream = ytdl(song.url, {
 			filter: 'audioonly',
 			quality: 'highestaudio',
-			highWaterMark: 1024 * 1024 * 5,
-			format: {
-				isLive: false
-			}
+			highWaterMark: 1024 * 1024 * 5
 		});
 
 		this.player = DiscordVoice.createAudioPlayer();
