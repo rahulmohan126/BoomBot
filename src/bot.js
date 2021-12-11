@@ -720,6 +720,7 @@ class MusicQueue {
 			// If no song playing, play this song.
 			if (!this.nowPlaying) this.play(this.songs[0]);
 		} catch (err) {
+			console.log(err);
 			bot.sendNotification('Could not join voice channel', 'error', msg);
 		}
 	}
