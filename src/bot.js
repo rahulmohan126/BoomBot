@@ -749,7 +749,9 @@ class MusicQueue {
 		});
 
 		this.player = DiscordVoice.createAudioPlayer();
-		this.player.play(DiscordVoice.createAudioResource(stream));
+		let resource = DiscordVoice.createAudioResource(stream, { inlineVolume: true });
+		resource.volume.setVolume(0.5); 
+		this.player.play(resource);
 		this.connection.subscribe(this.player);
 
 		stream.removeListener('error', stream.listeners('error')[0]);
