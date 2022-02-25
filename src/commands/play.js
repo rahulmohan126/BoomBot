@@ -14,6 +14,11 @@ module.exports = {
 
 		// Checks if voice channel is valid (if any)
 		if (!voiceChannel) {
+			if (guild.queue.voice) {
+				bot.sendNotification('You must be in the same voice channel as the bot to play music', 'error', msg);
+				return;
+			}
+
 			bot.sendNotification('Voice channel required in order to start playing music', 'error', msg);
 			return;
 		}
