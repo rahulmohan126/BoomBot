@@ -872,7 +872,11 @@ bot.on('ready', () => {
 	bot.user.setActivity(`over ${bot.guilds.cache.size} servers...`, { type: 'WATCHING' });
 
 	const startuptime = Date.now() - startTime;
-	console.log(`Ready to begin! Serving in ${bot.guilds.cache.size} servers. Startup time: ${startuptime}ms`);
+	if (LOGGING) {
+		console.log("ACTIVE SERVERS: ")
+		bot.guilds.cache.each(guild => console.log(`${guild.id} | ${guild.name}`));
+	}
+	console.log(`\nReady to begin! Serving in ${bot.guilds.cache.size} servers. Startup time: ${startuptime}ms`);
 });
 
 bot.on('messageCreate', msg => {
