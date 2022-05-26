@@ -905,15 +905,15 @@ bot.on('messageCreate', msg => {
 });
 
 bot.on('voiceStateUpdate', (oldState, newState) => {
-	const guild = bot.getGuild(newState.guild);
+	const guild = bot.getGuild(oldState.guild);
 
-	if (guild.queue.inUse && guild.queue.voice.id === newState.channelId) {
-		let channelMembers = newState.channel.members;
+	if (guild.queue.inUse && guild.queue.voice.id === oldState.channelId) {
+		let channelMembers = oldState.channel.members;
 		// Leaves vc if the only user in the vc is the bot itself
 		if (channelMembers.size === 1 && channelMembers.firstKey() === bot.BOTID) {
 			guild.queue.end();
 			bot.sendNotification('⏹ Music stopped since everyone left the channel.', 'info', {
-				channel: guild.queue.text, member: newState.member
+				channel: guild.queue.text, member: oldState.member
 			});
 		}
 	}
