@@ -910,11 +910,11 @@ bot.on('voiceStateUpdate', (oldState, newState) => {
 	if (guild.queue.inUse && guild.queue.voice.id === oldState.channelId) {
 		let channelMembers = oldState.channel.members;
 		// Leaves vc if the only user in the vc is the bot itself
-		if (channelMembers.size === 1 && channelMembers.firstKey() === bot.BOTID) {
-			guild.queue.end();
+		if (channelMembers.size === 1 && channelMembers.firstKey() === bot.ID) {
 			bot.sendNotification('⏹ Music stopped since everyone left the channel.', 'info', {
 				channel: guild.queue.text, member: oldState.member
 			});
+			guild.queue.end();
 		}
 	}
 });
