@@ -666,11 +666,15 @@ class MusicQueue {
 	async handleVideo(video, msg, voiceChannel, playlist = false) {
 		// Handles video exception
 		if (video.description === 'This video is unavailable.' || video.description === 'This video is private.') {
-			return;
+			return bot.sendNotification('Video is private or unavailable', 'error', msg);
 		}
 
 		// Creates a "song"
 		video = await this.client.youtube.getVideoByID(video.id);
+		if (video.raw.contentDetails.duration == 'P0D') {
+			return bot.sendNotification('Cannot play livestreams', 'error', msg);
+		}
+		
 		const song = new Song(video, msg);
 
 		// Joins channel and handles all exceptions
