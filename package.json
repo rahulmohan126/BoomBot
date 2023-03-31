@@ -18,13 +18,14 @@
   },
   "homepage": "https://github.com/rahulmohan126/BoomBot#readme",
   "dependencies": {
-    "@discordjs/opus": "^0.7.0",
-    "@discordjs/voice": "^0.9.0",
+    "@discordjs/opus": "^0.9.0",
+    "@discordjs/voice": "^0.14.0",
     "difflib": "^0.2.4",
-    "discord.js": "^13.7.0",
-    "ffmpeg-static": "^5.0.0",
-    "libsodium-wrappers": "^0.7.10",
+    "discord.js": "^14.7.1",
+    "ffmpeg-static": "^5.1.0",
+    "libsodium-wrappers": "^0.7.11",
+    "play-dl": "^1.9.6",
     "simple-youtube-api": "^5.2.1",
-    "ytdl-core": "^4.11.1"
+    "ytdl-core": "^4.11.2"
   }
 }

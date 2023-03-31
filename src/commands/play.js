@@ -1,4 +1,4 @@
-const { Util } = require('discord.js');
+const { escapeMarkdown } = require('discord.js');
 module.exports = {
 	main: async function (bot, guild, msg) {
 		const args = msg.content.split(' ');
@@ -27,27 +27,30 @@ module.exports = {
 			return;
 		}
 
+		
 		// Checks channel permissions
 		const permissions = voiceChannel.permissionsFor(msg.client.user);
-
-		if (!permissions.has('CONNECT')) {
+				
+		if (!permissions.has('Connect')) {
 			bot.sendNotification('I cannot connect to your voice channel, make sure I have the proper permissions!', 'error', msg);
 			return;
 		}
-		else if (!permissions.has('SPEAK')) {
+		else if (!permissions.has('Speak')) {
 			bot.sendNotification('I cannot speak in this voice channel, make sure I have the proper permissions!', 'error', msg);
 			return;
 		}
 
+		
 		// Checks if url is a playlist. If so, handles the video.
 		if (url.match(/^.*(youtu.be\/|list=)([^#\&\?]*).*/)) {
 			const playlist = await bot.youtube.getPlaylist(url);
 			const videos = await playlist.getVideos();
-
+			
+			
 			for (const video of Object.values(videos)) {
 				await guild.queue.handleVideo(video, msg, voiceChannel, true);
 			}
-
+			
 			// Sends custom completion message after the entire playlist is loaded.
 			bot.sendNotification(`✅ Playlist: **${playlist.title}** has been added to the queue!`, 'success', msg);
 		}
@@ -72,7 +75,7 @@ module.exports = {
 					// TODO Change this into an embed
 					if (!guild.instant) {
 						let selectionMsg = await bot.sendNotification(`
-${videos.map(video => `**${index++}. ** [${Util.escapeMarkdown(video.title)}](${video.url})`).join('\n')}
+${videos.map(video => `**${index++}. ** [${escapeMarkdown(video.title)}](${video.url})`).join('\n')}
 
 Please provide a value to select one of the search results ranging from 1-10.`,
 'info', msg, [], 'Song Selection');
