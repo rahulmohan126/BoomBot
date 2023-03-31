@@ -5,8 +5,10 @@ const Discord = require('discord.js');
 const DiscordVoice = require('@discordjs/voice');
 const YouTube = require('simple-youtube-api');
 const fs = require('fs');
-const ytdl = require('ytdl-core');
+// const ytdl = require('ytdl-core');
+const play = require('play-dl');
 const readline = require('readline');
+const { GatewayIntentBits } = require('discord.js');
 
 const LOGGING = true;
 //#endregion
@@ -746,19 +748,23 @@ class MusicQueue {
 
 		// 1024 = 1 KB, 1024 x 1024 = 1MB. The highWaterMark determines how much of the stream will be preloaded.
 		// Dedicating more memory will make streams more smoother but uses more RAM.
-		const stream = ytdl(song.url, {
-			filter: 'audioonly',
-			quality: 'highestaudio',
-			highWaterMark: 1024 * 1024 * 5
+		const stream_obj = await play.stream(song.url, {
+			// filter: 'audioonly',
+			// quality: 'highestaudio',
+			// highWaterMark: 1024 * 1024 * 5
+			quality: 2,
+			discordPlayerCompatibility: true,
 		});
 
+		const stream = stream_obj.stream;
+
 		this.player = DiscordVoice.createAudioPlayer();
-		let resource = DiscordVoice.createAudioResource(stream, { inlineVolume: true });
+		let resource = DiscordVoice.createAudioResource(stream, { inlineVolume: true, inputType: stream_obj.type });
 		resource.volume.setVolume(0.5); 
 		this.player.play(resource);
 		this.connection.subscribe(this.player);
 
-		stream.removeListener('error', stream.listeners('error')[0]);
+		// stream.removeListener('error', stream.listeners('error')[0]);
 		stream.on('error', () => {
 			// YTDL issue that causes video stream to crash the program. Cannot
 			// be fixed myself, so for now, just catch the error and move to the
@@ -824,7 +830,7 @@ class MusicQueue {
 class Song {
 	constructor(video, msg) {
 		this.id = video.id;
-		this.title = Discord.Util.escapeMarkdown(video.title);
+		this.title = Discord.escapeMarkdown(video.title);
 		this.url = `https://www.youtube.com/watch?v=${video.id}`;
 		this.thumbnail = video.thumbnails.default.url;
 		this.duration = this.calculateSongDuration(video.raw.contentDetails.duration);
@@ -860,7 +866,13 @@ class Song {
 //#region  ---------------------	Setup		---------------------
 
 const config = JSON.parse(fs.readFileSync(`./settings.json`));
-const bot = new Bot({ autoReconnect: true, intents: 32767 }, config);
+const bot = new Bot({ autoReconnect: true, intents: [
+	GatewayIntentBits.Guilds,
+	GatewayIntentBits.GuildMembers,
+	GatewayIntentBits.GuildMessages,
+	GatewayIntentBits.MessageContent,
+	GatewayIntentBits.GuildVoiceStates
+] }, config);
 
 const consoleListener = readline.createInterface({
 	input: process.stdin,
@@ -885,9 +897,7 @@ bot.on('ready', () => {
 
 bot.on('messageCreate', msg => {
 	const guild = bot.getGuild(msg.guild);
-
 	if (msg.author.id !== bot.ID && guild.validMessage(msg)) {
-
 		const command = guild.extractCommand(msg);
 
 		if (bot.commandDict[command]) {

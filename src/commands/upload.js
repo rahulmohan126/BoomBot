@@ -10,8 +10,8 @@ module.exports = {
 				bot.sendNotification('No mp3 file was given', 'error', msg);
 			}
 			// Limits fize sizes to 2 MB
-			else if (attachment.size > 1024 * 1024 * 2) {
-				bot.sendNotification('That file is too big');
+			else if (attachment.size > 1024 * 1024 * 3) {
+				bot.sendNotification('That file is too big', 'error', msg);
 			}
 			else {
 				fetch(attachment.url).then(res => {
