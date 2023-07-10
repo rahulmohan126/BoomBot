@@ -5,8 +5,7 @@ const Discord = require('discord.js');
 const DiscordVoice = require('@discordjs/voice');
 const YouTube = require('simple-youtube-api');
 const fs = require('fs');
-// const ytdl = require('ytdl-core');
-const play = require('play-dl');
+const play_dl = require('play-dl');
 const readline = require('readline');
 const { GatewayIntentBits } = require('discord.js');
 
@@ -746,16 +745,10 @@ class MusicQueue {
 		this.nowPlaying = song;
 		this.songs.shift();
 
-		// 1024 = 1 KB, 1024 x 1024 = 1MB. The highWaterMark determines how much of the stream will be preloaded.
-		// Dedicating more memory will make streams more smoother but uses more RAM.
-		const stream_obj = await play.stream(song.url, {
-			// filter: 'audioonly',
-			// quality: 'highestaudio',
-			// highWaterMark: 1024 * 1024 * 5
+		const stream_obj = await play_dl.stream(song.url, {
 			quality: 2,
 			discordPlayerCompatibility: true,
 		});
-
 		const stream = stream_obj.stream;
 
 		this.player = DiscordVoice.createAudioPlayer();
@@ -764,11 +757,7 @@ class MusicQueue {
 		this.player.play(resource);
 		this.connection.subscribe(this.player);
 
-		// stream.removeListener('error', stream.listeners('error')[0]);
 		stream.on('error', () => {
-			// YTDL issue that causes video stream to crash the program. Cannot
-			// be fixed myself, so for now, just catch the error and move to the
-			// next item in the queue.
 			bot.sendNotification(`Sorry, there was an error processing "${this.nowPlaying.title}", moving to the next song in the queue`,'error', {
 				'channel': this.text, 'member': song.requestedBy
 			});

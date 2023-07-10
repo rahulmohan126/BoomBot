@@ -59,11 +59,6 @@ This file should be placed in the project's root directory.
 
 ### Requirements
 
-1. Node.js
-3. discord.js
-4. ytdl-core
-5. simple-youtube-api
-
 #### node.js
 Go to [this](https://nodejs.org/en/download/) link and download the Node.js installer for your operating system.
 Follow the installation steps to get node.js.
