@@ -26,6 +26,6 @@
     "libsodium-wrappers": "^0.7.11",
     "play-dl": "^1.9.6",
     "simple-youtube-api": "^5.2.1",
-    "ytdl-core": "^4.11.2"
+    "ytdl-core": "^4.11.4"
   }
 }
