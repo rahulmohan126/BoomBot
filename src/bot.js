@@ -210,7 +210,7 @@ class Bot extends Discord.Client {
 					this.commands.push(command);
 					this.commandDict[fileName] = command;
 
-					if (LOGGING) console.table({ Command: fileName, Status: 'Loaded' });
+					// if (LOGGING) console.table({ Command: fileName, Status: 'Loaded' });
 				} catch (error) {
 					console.log(error);
 					if (LOGGING) console.table({ Command: fileName, Status: 'Failed to load' });
@@ -774,6 +774,7 @@ class MusicQueue {
 		song.startTime = Date.now();
 
 		this.player.on(DiscordVoice.AudioPlayerStatus.Idle, () => {
+			stream.destroy();
 			// Plays the next song (if looped, the queue will remian unchanged and continue playing the first item)
 			if (this.looping) this.play(this.nowPlaying);
 			else this.play(this.songs[0]);
