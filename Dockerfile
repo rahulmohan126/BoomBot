@@ -1,6 +1,6 @@
 # For easier deployment, use Docker to deploy boombot with ease.
 
-FROM node:16.11.0
+FROM node:18-bullseye
 
 RUN ldd --version
 
