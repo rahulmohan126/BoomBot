@@ -6,6 +6,7 @@ const DiscordVoice = require('@discordjs/voice');
 const YouTube = require('simple-youtube-api');
 const fs = require('fs');
 const play_dl = require('play-dl');
+const ytdl = require('ytdl-core');
 const readline = require('readline');
 const { GatewayIntentBits } = require('discord.js');
 
@@ -749,7 +750,15 @@ class MusicQueue {
 			quality: 2,
 			discordPlayerCompatibility: true,
 		});
-		const stream = stream_obj.stream;
+		var stream = stream_obj.stream;
+		
+		if (!stream.data) {
+			stream = ytdl(song.url, {
+				filter: 'audioonly',
+				quality: 'highestaudio',
+				highWaterMark: 1024 * 1024 * 5
+			});
+		}
 
 		this.player = DiscordVoice.createAudioPlayer();
 		let resource = DiscordVoice.createAudioResource(stream, { inlineVolume: true, inputType: stream_obj.type });
