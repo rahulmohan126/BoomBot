@@ -6,7 +6,7 @@ const DiscordVoice = require('@discordjs/voice');
 const YouTube = require('simple-youtube-api');
 const fs = require('fs');
 const play_dl = require('play-dl');
-const ytdl = require('ytdl-core');
+const ytdl = require('@distube/ytdl-core');
 const readline = require('readline');
 const { GatewayIntentBits } = require('discord.js');
 
