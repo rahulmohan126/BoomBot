@@ -1,5 +1,6 @@
 .DS_Store
 settings.json
+cookies.json
 node_modules
 data
 package-lock.json

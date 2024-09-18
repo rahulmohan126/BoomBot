@@ -5,7 +5,6 @@ const Discord = require('discord.js');
 const DiscordVoice = require('@discordjs/voice');
 const YouTube = require('simple-youtube-api');
 const fs = require('fs');
-const play_dl = require('play-dl');
 const ytdl = require('@distube/ytdl-core');
 const readline = require('readline');
 const { GatewayIntentBits } = require('discord.js');
@@ -21,7 +20,7 @@ function PromiseTimeout(delayms) {
 }
 
 class Bot extends Discord.Client {
-	constructor(options, config) {
+	constructor(options, config, cookies) {
 		super(options);
 
 		this.START_TIME = Date.now();
@@ -40,6 +39,7 @@ class Bot extends Discord.Client {
 		}
 
 		this.youtube = new YouTube(this.GOOGLE_API_KEY);
+		this.agent = ytdl.createProxyAgent(config.PROXY, cookies);
 		this.database = new Map();
 		this.commands = [];
 
@@ -746,22 +746,15 @@ class MusicQueue {
 		this.nowPlaying = song;
 		this.songs.shift();
 
-		const stream_obj = await play_dl.stream(song.url, {
-			quality: 2,
-			discordPlayerCompatibility: true,
+		const stream = ytdl(song.url, {
+			agent: this.client.agent,
+			filter: 'audioonly',
+			quality: 'highestaudio',
+			highWaterMark: 1024 * 1024 * 5
 		});
-		var stream = stream_obj.stream;
-		
-		if (!stream.data) {
-			stream = ytdl(song.url, {
-				filter: 'audioonly',
-				quality: 'highestaudio',
-				highWaterMark: 1024 * 1024 * 5
-			});
-		}
 
 		this.player = DiscordVoice.createAudioPlayer();
-		let resource = DiscordVoice.createAudioResource(stream, { inlineVolume: true, inputType: stream_obj.type });
+		let resource = DiscordVoice.createAudioResource(stream, { inlineVolume: true });
 		resource.volume.setVolume(0.5); 
 		this.player.play(resource);
 		this.connection.subscribe(this.player);
@@ -865,13 +858,14 @@ class Song {
 //#region  ---------------------	Setup		---------------------
 
 const config = JSON.parse(fs.readFileSync(`./settings.json`));
+const cookies = JSON.parse(fs.readFileSync(`./cookies.json`));
 const bot = new Bot({ autoReconnect: true, intents: [
 	GatewayIntentBits.Guilds,
 	GatewayIntentBits.GuildMembers,
 	GatewayIntentBits.GuildMessages,
 	GatewayIntentBits.MessageContent,
 	GatewayIntentBits.GuildVoiceStates
-] }, config);
+] }, config, cookies);
 
 const consoleListener = readline.createInterface({
 	input: process.stdin,
