@@ -37,9 +37,11 @@ class Bot extends Discord.Client {
 			ERROR: 0xEF5250,
 			INFO: 0x03A8F4
 		}
+		
+		this.agent = config.PROXY === null ? ytdl.createAgent(cookies) :
+			ytdl.createProxyAgent(config.PROXY, cookies);
 
 		this.youtube = new YouTube(this.GOOGLE_API_KEY);
-		this.agent = ytdl.createProxyAgent(config.PROXY, cookies);
 		this.database = new Map();
 		this.commands = [];
 
