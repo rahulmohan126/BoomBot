@@ -38,8 +38,9 @@ class Bot extends Discord.Client {
 			INFO: 0x03A8F4
 		}
 		
-		this.agent = config.PROXY === null ? ytdl.createAgent(cookies) :
-			ytdl.createProxyAgent(config.PROXY, cookies);
+		this.cookies = cookies;
+		this.agent = null;
+		this.buildAgent(config.PROXY);
 
 		this.youtube = new YouTube(this.GOOGLE_API_KEY);
 		this.database = new Map();
@@ -428,6 +429,11 @@ class Bot extends Discord.Client {
 		this.loadGuilds();
 		this.loadCommands();
 		this.loadSoundboard();
+	}
+
+	buildAgent(newProxy) {
+		this.agent = newProxy === null ? ytdl.createAgent(cookies) :
+			ytdl.createProxyAgent(newProxy, cookies);
 	}
 }
 
@@ -909,6 +915,10 @@ bot.on('messageCreate', msg => {
 
 			// Runs the command
 			guild.soundboard[command].main(bot, guild, msg);
+		}
+		// Owner exclusive command to live update proxy
+		else if (msg.author.id === bot.OWNERID && command === "proxy") {
+			bot.buildAgent(msg.content);
 		}
 	}
 });
