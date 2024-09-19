@@ -30,6 +30,7 @@ class Bot extends Discord.Client {
 		this.PREFIX = config.PREFIX;
 		this.TOKEN = config.TOKEN;
 		this.GOOGLE_API_KEY = config.GOOGLE_API_KEY;
+		this.PROXY = config.PROXY;
 
 		this.COLORS = {
 			DEFAULT: 0x351C75,
@@ -39,8 +40,7 @@ class Bot extends Discord.Client {
 		}
 		
 		this.cookies = cookies;
-		this.agent = null;
-		this.buildAgent(config.PROXY);
+		this.buildAgent(this.PROXY);
 
 		this.youtube = new YouTube(this.GOOGLE_API_KEY);
 		this.database = new Map();
@@ -431,9 +431,24 @@ class Bot extends Discord.Client {
 		this.loadSoundboard();
 	}
 
+
+	updateConfig() {
+		const config = {
+			BOTID: this.ID,
+			OWNERID: this.OWNERID,
+			PREFIX: this.PREFIX,
+			TOKEN: this.TOKEN,
+			GOOGLE_API_KEY: this.GOOGLE_API_KEY,
+			PROXY: this.PROXY
+		}
+
+		fs.writeFileSync("./settings.json", JSON.stringify(config, null, 2));
+	}
+
 	buildAgent(newProxy) {
-		this.agent = newProxy === null ? ytdl.createAgent(cookies) :
-			ytdl.createProxyAgent(newProxy, cookies);
+		this.agent = (newProxy === null) ? ytdl.createAgent(cookies) : ytdl.createProxyAgent(newProxy, cookies);
+		this.PROXY = newProxy;
+		this.updateConfig();	
 	}
 }
 
@@ -918,6 +933,10 @@ bot.on('messageCreate', msg => {
 		}
 		// Owner exclusive command to live update proxy
 		else if (msg.author.id === bot.OWNERID && command === "proxy") {
+			if (msg.content === "off") {
+				msg.content = null;
+			}
+			
 			bot.buildAgent(msg.content);
 		}
 	}
