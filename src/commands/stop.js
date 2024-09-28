@@ -17,5 +17,5 @@ module.exports = {
 	help: 'Stop the current song and clears song queue',
 	usage: 'stop',
 	module: 'music',
-	keywords: 'disconnect'
+	aliases: ['disconnect'],
 };

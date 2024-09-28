@@ -183,16 +183,16 @@ class Bot extends Discord.Client {
 		var files = fs.readdirSync(`./src/commands/`);
 
 		for (let file of files) {
-			if (file.endsWith('.js')) {
-				let fileName = file.slice(0, -3);
-				try {
-					this.loadCommand(fileName);
+			if (!file.endsWith('.js')) continue;
 
-					if (LOGGING) console.table({ Command: fileName, Status: 'Loaded' });
-				} catch (error) {
-					console.log(error);
-					if (LOGGING) console.table({ Command: fileName, Status: 'Failed to load' });
-				}
+			let fileName = file.slice(0, -3);
+			try {
+				this.loadCommand(fileName);
+
+				if (LOGGING) console.table({ Command: fileName, Status: 'Loaded' });
+			} catch (error) {
+				console.log(error);
+				if (LOGGING) console.table({ Command: fileName, Status: 'Failed to load' });
 			}
 		}
 
@@ -272,9 +272,9 @@ class Bot extends Discord.Client {
 		delete this.commandDict[name];
 
 		// Deletes the command from the dict
-		if (command.keywords !== undefined) {
-			command.keywords.forEach(keyword => {
-				delete this.commandDict[keyword];
+		if (command.aliases !== undefined) {
+			command.aliases.forEach(alias => {
+				delete this.commandDict[alias];
 			});
 		}
 
@@ -298,9 +298,9 @@ class Bot extends Discord.Client {
 
 		this.commandDict[name] = command;
 
-		if (command.keywords !== undefined) {
-			for (let keyword of command.keywords) {
-				this.commandDict[keyword] = command;
+		if (command.aliases !== undefined) {
+			for (let alias of command.aliases) {
+				this.commandDict[alias] = command;
 			}
 		}
 
@@ -519,7 +519,7 @@ class Guild {
 	 */
 	validMessage(msg) {
 		return (this.checkTextChannelByID(msg.channel.id) ||
-			this.checkPerms(msg.member) < 2) && (msg.content.startsWith(this.prefix) || msg.content.startsWith(`<@!${this.client.ID}>`));
+			this.checkPerms(msg.member) < 2) && (msg.content.startsWith(this.prefix) || msg.content.startsWith(`<@${this.client.ID}>`));
 	}
 
 	/**
@@ -528,14 +528,14 @@ class Guild {
 	 */
 	extractCommand(msg) {
 		if (msg.content.startsWith(this.prefix)) {
-			msg.content = msg.content.replace(this.prefix, '').trimLeft();
+			msg.content = msg.content.replace(this.prefix, '').trimStart();
 		}
-		else if (msg.content.startsWith(`<@!${this.client.ID}>`)) {
-			msg.content = msg.content.replace(`<@!${this.client.ID}>`, '').trimLeft();
+		else if (msg.content.startsWith(`<@${this.client.ID}>`)) {
+			msg.content = msg.content.replace(`<@${this.client.ID}>`, '').trimStart();
 		}
 
 		const command = msg.content.split(' ')[0].toLowerCase();
-		msg.content = msg.content.replace(command, '').trimLeft();
+		msg.content = msg.content.replace(command, '').trimStart();
 
 		return command;
 	}
@@ -569,7 +569,7 @@ class Command {
 	constructor(commandName, command) {
 		this.name = commandName;
 		this.main = command.main;
-		this.keywords = command.keywords;
+		this.aliases = command.aliases;
 		this.usage = command.usage;
 		this.help = command.help;
 		this.module = command.module;
@@ -982,7 +982,7 @@ consoleListener.on('line', function (input) {
 		process.exit(0);
 	}
 	else if (input.startsWith('reload')) {
-		let name = input.replace('reload', '').trimLeft();
+		let name = input.replace('reload', '').trimStart();
 
 		// Only load command if it was successfully unloaded.
 		if (bot.unloadCommand(name))
@@ -992,14 +992,14 @@ consoleListener.on('line', function (input) {
 		else console.log('Could not unload that command during reload');
 	}
 	else if (input.startsWith('unload')) {
-		let name = input.replace('unload', '').trimLeft();
+		let name = input.replace('unload', '').trimStart();
 
 		if (bot.unloadCommand(name))
 			console.log('Command successfully unloaded');
 		else console.log('Could not unload that command');
 	}
 	else if (input.startsWith('load')) {
-		let name = input.replace('load', '').trimLeft();
+		let name = input.replace('load', '').trimStart();
 
 		if (bot.loadCommand(name))
 			console.log('Command successfully loaded');

@@ -1,4 +1,7 @@
 const { escapeMarkdown } = require('discord.js');
+
+const valFilter = msg => (0 < msg.content && msg.content <= videos.length);
+
 module.exports = {
 	main: async function (bot, guild, msg) {
 		const args = msg.content.split(' ');
@@ -12,19 +15,16 @@ module.exports = {
 			return;
 		}
 
-		// Checks if voice channel is valid (if any)
+		// Checks if user is in a voice channel
 		if (!voiceChannel) {
-			if (guild.queue.voice) {
-				bot.sendNotification('You must be in the same voice channel as the bot to play music', 'error', msg);
-				return;
-			}
-
-			bot.sendNotification('Voice channel required in order to start playing music', 'error', msg);
-			return;
+			return bot.sendNotification('Voice channel required in order to start playing music', 'error', msg);
+		}
+		// Check if user is in the same voice channel as the bot (if any)
+		else if (guild.queue.voice && guild.queue.voice !== voiceChannel) {
+			return bot.sendNotification('You must be in the same voice channel as the bot to play music', 'error', msg);
 		}
 		else if (!guild.checkVoiceChannelByID(voiceChannel.id)) {
-			bot.sendNotification('That voice channel is not permitted', 'error', msg);
-			return;
+			return bot.sendNotification('That voice channel is not permitted', 'error', msg);
 		}
 
 		
@@ -32,12 +32,10 @@ module.exports = {
 		const permissions = voiceChannel.permissionsFor(msg.client.user);
 				
 		if (!permissions.has('Connect')) {
-			bot.sendNotification('I cannot connect to your voice channel, make sure I have the proper permissions!', 'error', msg);
-			return;
+			return bot.sendNotification('I cannot connect to your voice channel, make sure I have the proper permissions!', 'error', msg);
 		}
 		else if (!permissions.has('Speak')) {
-			bot.sendNotification('I cannot speak in this voice channel, make sure I have the proper permissions!', 'error', msg);
-			return;
+			return bot.sendNotification('I cannot speak in this voice channel, make sure I have the proper permissions!', 'error', msg);
 		}
 
 		
@@ -46,68 +44,65 @@ module.exports = {
 			const playlist = await bot.youtube.getPlaylist(url);
 			const videos = await playlist.getVideos();
 			
-			
 			for (const video of Object.values(videos)) {
 				await guild.queue.handleVideo(video, msg, voiceChannel, true);
 			}
 			
 			// Sends custom completion message after the entire playlist is loaded.
-			bot.sendNotification(`✅ Playlist: **${playlist.title}** has been added to the queue!`, 'success', msg);
+			return bot.sendNotification(`✅ Playlist: **${playlist.title}** has been added to the queue!`, 'success', msg);
 		}
-		else {
-			// Tries to see if url is a direct video link. If so, handles the video
-			try {
-				var video = await bot.youtube.getVideo(url);
-				await guild.queue.handleVideo(video, msg, voiceChannel).catch(err => console.error(err));
-			}
-			// If not, treats the argument as a search query
-			catch (error) {
-				try {
-					var videos = await bot.youtube.searchVideos(searchString, 10);
-
-					// No results for the given search query will throw an error,
-					// it will automatically be caught by the SOS error message.
-					if (videos.length === 0) throw new Error();
-
-					// Sends user the options.
-					let index = 1;
-
-					// TODO Change this into an embed
-					if (!guild.instant) {
-						let selectionMsg = await bot.sendNotification(`
-${videos.map(video => `**${index++}. ** [${escapeMarkdown(video.title)}](${video.url})`).join('\n')}
-
-Please provide a value to select one of the search results ranging from 1-10.`,
-'info', msg, [], 'Song Selection');
-
-						try {
-							const filter = indexMsg => indexMsg.content > 0 && indexMsg.content < videos.length + 1;
-							var response = await msg.channel.awaitMessages({
-								filter,
-								max: 1,
-								time: 5000, // 5000 ms
-								errors: ['time']
-							});
-						}
-						catch (err) {
-							bot.sendNotification('No valid value entered, cancelling video selection.', 'error', msg);
-							return;
-						}
-
-						// Deletes the selection message and handles the video
-						selectionMsg.delete();
-						index = response.first().content;
-					}
-
-					guild.queue.handleVideo(videos[index - 1], msg, voiceChannel).catch(err => console.error(err));
-				}
-				catch (err) {
-					console.log(err);
-					bot.sendNotification('🆘 I could not obtain any search results.', 'error', msg);
-					return;
-				}
-			}
+		
+		// Tries to see if url is a direct video link. If so, handles the video
+		try {
+			var video = await bot.youtube.getVideo(url);
+			await guild.queue.handleVideo(video, msg, voiceChannel).catch(err => console.error(err));
+			return;
 		}
+		catch (err) {
+		}
+		
+		// Try the argument as a search query
+		var videos;
+		try {
+			videos = await bot.youtube.searchVideos(searchString, 10);
+
+			// No results for the given search query will throw an error,
+			// it will automatically be caught by the SOS error message.
+			if (videos.length === 0) throw new Error();
+		}
+		catch (err) {
+			return bot.sendNotification('🆘 I could not obtain any search results.', 'error', msg);
+		}
+
+		// If search is disabled, play the first video
+		if (guild.instant) {
+			await guild.queue.handleVideo(videos[0], msg, voiceChannel).catch(err => console.error(err));
+			return;
+		}
+
+		let index = 0;
+		const selectionContent = `
+${videos.map(video => `**${++index}. ** [${escapeMarkdown(video.title)}](${video.url})`).join('\n')}
+		
+Please provide a value to select one of the search results ranging from 1-10.`;
+		let selectionMsg = await bot.sendNotification(selectionContent, 'info', msg, [], 'Song Selection');
+
+		try {
+			var response = await msg.channel.awaitMessages({
+				filter: valFilter,
+				max: 1,
+				time: 5000, // 5000 ms
+				errors: ['time']
+			});
+		}
+		catch (err) {
+			return bot.sendNotification('No valid value entered, cancelling video selection.', 'error', msg);
+		}
+
+		// Deletes the selection message and handles the video
+		selectionMsg.delete();
+		let selection = parseInt(response.first().content) - 1;
+		await guild.queue.handleVideo(videos[selection], msg, voiceChannel).catch(err => console.error(err));
 	},
 	help: 'Play any Youtube video, use keywords, direct links, or playlists.',
 	usage: 'play [keyword | video link | playlist link]',

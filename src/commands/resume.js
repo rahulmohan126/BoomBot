@@ -17,5 +17,6 @@ module.exports = {
 	},
 	help: 'Resumes the current song.',
 	usage: 'resume',
-	module: 'music'
+	module: 'music',
+	aliases: ['unpause']
 };
