@@ -6,7 +6,6 @@ const DiscordVoice = require('@discordjs/voice');
 const YouTube = require('simple-youtube-api');
 const fs = require('fs');
 const ytdl = require('@distube/ytdl-core');
-const readline = require('readline');
 const { GatewayIntentBits } = require('discord.js');
 
 const LOGGING = true;
@@ -119,67 +118,6 @@ class Bot extends Discord.Client {
 	 * Loads all the bot commands
 	 */
 	loadCommands() {
-
-		let currentCommand = new Command('help', {
-			hide: true,
-			main: function (bot, guild, msg) {
-				const GUILD_PREFIX = bot.getGuild(msg.guild).prefix;
-
-				if (msg.content === '') {
-					var cmds = {};
-
-					for (let command of bot.commands) {
-						if (!command.hide) {
-							if (!cmds[command.module]) {
-								cmds[command.module] = [];
-							}
-
-							cmds[command.module].push(command.name);
-						}
-					}
-
-					let embedList = [];
-
-					for (let key in cmds) {
-						embedList.push({
-							name: `${key}`,
-							value: cmds[key].join(', '),
-							inline: false
-						})
-					}
-
-					embedList.push({
-						name: 'soundboard',
-						value: !Object.entries(guild.soundboard).length ? '---' : Object.keys(guild.soundboard).join(', '),
-						inline: false
-					})
-
-					bot.sendNotification(`Bot prefix: ${GUILD_PREFIX} | See more using: \`help <command name>\``, 'info', msg, embedList);
-				}
-				else {
-					let command = bot.commands.filter(item => item.name === msg.content)[0] || guild.soundboard[msg.content];
-					if (command) {
-						bot.sendNotification(`Bot prefix: ${GUILD_PREFIX} | Command: ${command.name}`, 'info', msg, [
-							{
-								name: 'Description: ',
-								value: command.help,
-							},
-							{
-								name: 'Usage: ',
-								value: GUILD_PREFIX + command.usage,
-							}
-						]);
-					}
-					else {
-						bot.sendNotification('That command does not exist', 'error', msg);
-					}
-				}
-			}
-		});
-
-		this.commands.push(currentCommand);
-		this.commandDict['help'] = currentCommand;
-
 		var files = fs.readdirSync(`./src/commands/`);
 
 		for (let file of files) {
@@ -890,12 +828,6 @@ const bot = new Bot({ autoReconnect: true, intents: [
 	GatewayIntentBits.GuildVoiceStates
 ] }, config, cookies);
 
-const consoleListener = readline.createInterface({
-	input: process.stdin,
-	output: process.stdout,
-	terminal: false
-});
-
 //#endregion
 //#region  ---------------------	Handlers	---------------------
 
@@ -913,32 +845,26 @@ bot.on('ready', () => {
 
 bot.on('messageCreate', msg => {
 	const guild = bot.getGuild(msg.guild);
-	if (msg.author.id !== bot.ID && guild.validMessage(msg)) {
-		const command = guild.extractCommand(msg);
+	if (msg.author.id === bot.ID || !guild.validMessage(msg)) {
+		return;
+	}
 
-		if (bot.commandDict[command]) {
-			// Logs guild, author, and message if enabled
-			if (LOGGING) bot.log['commandMsg'](msg, command);
+	const command = guild.extractCommand(msg);
 
-			// Runs the command
-			bot.runCommand(command, guild, msg);
-		}
-		// Seperate condition for guild soundboards.
-		else if (guild.hasSoundboard(command)) {
-			// Logs guild, author, and message if enabled
-			if (LOGGING) bot.log['commandMsg'](msg, command);
+	if (bot.commandDict[command]) {
+		// Logs guild, author, and message if enabled
+		if (LOGGING) bot.log['commandMsg'](msg, command);
 
-			// Runs the command
-			guild.soundboard[command].main(bot, guild, msg);
-		}
-		// Owner exclusive command to live update proxy
-		else if (msg.author.id === bot.OWNERID && command === "proxy") {
-			if (msg.content === "off") {
-				msg.content = null;
-			}
-			
-			bot.buildAgent(msg.content);
-		}
+		// Runs the command
+		bot.runCommand(command, guild, msg);
+	}
+	// Seperate condition for guild soundboards.
+	else if (guild.hasSoundboard(command)) {
+		// Logs guild, author, and message if enabled
+		if (LOGGING) bot.log['commandMsg'](msg, command);
+
+		// Runs the command
+		guild.soundboard[command].main(bot, guild, msg);
 	}
 });
 
@@ -974,37 +900,5 @@ bot.on('guildCreate', guild => {
 })
 
 bot.login(bot.TOKEN);
-
-consoleListener.on('line', function (input) {
-	if (input === 'stop') {
-		console.log('Destroying bot and exiting application...');
-		bot.destroy();
-		process.exit(0);
-	}
-	else if (input.startsWith('reload')) {
-		let name = input.replace('reload', '').trimStart();
-
-		// Only load command if it was successfully unloaded.
-		if (bot.unloadCommand(name))
-			if (bot.loadCommand(name))
-				console.log('Command successfully reloaded');
-			else console.log('Could not load that command during reload');
-		else console.log('Could not unload that command during reload');
-	}
-	else if (input.startsWith('unload')) {
-		let name = input.replace('unload', '').trimStart();
-
-		if (bot.unloadCommand(name))
-			console.log('Command successfully unloaded');
-		else console.log('Could not unload that command');
-	}
-	else if (input.startsWith('load')) {
-		let name = input.replace('load', '').trimStart();
-
-		if (bot.loadCommand(name))
-			console.log('Command successfully loaded');
-		else console.log('Could not load that command');
-	}
-});
 
 //#endregion

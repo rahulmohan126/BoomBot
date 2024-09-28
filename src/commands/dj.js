@@ -18,7 +18,7 @@ module.exports = {
 		guild.save();
 		bot.sendNotification(`The ${msg.guild.roles.cache.get(guild.dj)} is in the house!`, 'success', msg);
 	},
-	help: `Assigns a DJ role, DJs and guild owners are the only ones that can change server settings.`,
+	help: 'Assigns a DJ role, DJs and guild owners are the only ones that can change server settings.',
 	usage: 'dj (new DJ role name)',
 	module: 'moderation & management'
 };

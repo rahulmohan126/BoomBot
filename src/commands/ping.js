@@ -6,7 +6,7 @@ module.exports = {
 			msg.edit(`Pong \`(${latency}ms)\``);
 		});
 	},
-	help: `Ping the server for latency`,
+	help: 'Ping the server for latency',
 	usage: 'ping',
 	module: 'other'
 };

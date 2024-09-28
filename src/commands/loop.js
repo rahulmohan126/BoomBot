@@ -11,7 +11,7 @@ module.exports = {
 			bot.sendNotification(`⟲ Music ${guild.queue.looping ? '' : 'de'}looped!`, 'success', msg);
 		}
 	},
-	help: `Keep replaying a song... forever. Can be disabled by using loop again or ending music.`,
+	help: 'Endlessly replay a song. Can be disabled by using "loop" again or ending music.',
 	usage: 'loop',
 	module: 'music'
 };
