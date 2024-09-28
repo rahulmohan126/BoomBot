@@ -15,11 +15,11 @@ module.exports = {
 				bot.sendNotification(`The channel types are "voice" or "text"`, 'error', msg);
 				return;
 			}
-			else if (channelType == 'text' || channelType == 'voice') {
+			else if (channelType === 'text' || channelType === 'voice') {
 				var channelID;
 				var channel;
 				// Checks for all
-				if (channelName == 'all') channelID = 'all';
+				if (channelName === 'all') channelID = 'all';
 				// Checks for valid channel name
 				else {
 					channel = guild.channels.cache.find(channel => channel.name === channelName);
@@ -29,9 +29,9 @@ module.exports = {
 				}
 
 				if (channelID) {
-					let actualID = channelID == 'all' ? '' : channelID;
+					let actualID = channelID === 'all' ? '' : channelID;
 
-					if (channelType == 'text') guild.textChannel = actualID;
+					if (channelType === 'text') guild.textChannel = actualID;
 					else guild.voiceChannel = actualID;
 
 					guild.save();
@@ -46,8 +46,8 @@ module.exports = {
 				bot.sendNotification(`The channel types are "voice" or "text"`, 'error', msg);
 				return;
 			}
-			else if (channelType == 'text' || channelType == 'voice') {
-				let selectedChannel = channelType == 'text' ? guild.textChannel : guild.voiceChannel;
+			else if (channelType === 'text' || channelType === 'voice') {
+				let selectedChannel = channelType === 'text' ? guild.textChannel : guild.voiceChannel;
 				let channel = msg.guild.channels.cache.find(channel => channel.id === selectedChannel);
 
 				bot.sendNotification(`The current ${channelType} channel is ${channel || 'all'}`, 'info', msg);

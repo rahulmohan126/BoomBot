@@ -3,14 +3,14 @@ module.exports = {
 
 		const arg = msg.content.split(' ')[0].trim();
 
-		if (arg == '') {
-			if (guild.dj == '') {
+		if (arg === '') {
+			if (guild.dj === '') {
 				return bot.sendNotification('There is no current DJ role.', 'info', msg);
 			}
 			
 			bot.sendNotification(`The current DJ is: ${msg.guild.roles.cache.get(guild.dj)}`, 'info', msg);
 		}
-		else if (guild.checkPerms(msg.author.id) == 2) {
+		else if (guild.checkPerms(msg.author.id) === 2) {
 			return bot.sendNotification('Only the guild owner or DJ can assign a DJ.', 'error', msg);
 		}
 

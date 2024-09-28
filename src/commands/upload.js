@@ -3,7 +3,7 @@ const fetch = require('node-fetch');
 
 module.exports = {
 	main: function (bot, guild, msg) {
-		if (guild.checkPerms(msg.member) == 2) {
+		if (guild.checkPerms(msg.member) === 2) {
 			return bot.sendNotification('You do not have permission to use this command', 'error', msg);
 		}
 
