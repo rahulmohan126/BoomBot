@@ -2,10 +2,9 @@
   "name": "boombot",
   "version": "1.0.0",
   "description": "A music bot for discord",
-  "main": "src/bot.js",
+  "main": "src/main.js",
   "scripts": {
-    "test": "node src/bot.js",
-    "start": "node src/bot.js"
+    "start": "node src/main.js"
   },
   "repository": {
     "type": "git",
