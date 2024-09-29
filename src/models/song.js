@@ -1,13 +1,39 @@
 const Discord = require('discord.js');
+const YouTube = require('simple-youtube-api');
 
 module.exports = class Song {
+	/**
+	 * @param {YouTube.Video} video 
+	 * @param {Discord.ChatInputCommandInteraction} int 
+	 */
 	constructor(video, int) {
+		/**
+		 * @type {String}
+		 */
 		this.id = video.id;
+		/**
+		 * @type {String}
+		 */
 		this.title = Discord.escapeMarkdown(video.title);
+		/**
+		 * @type {String}
+		 */
 		this.url = `https://www.youtube.com/watch?v=${video.id}`;
+		/**
+		 * @type {String}
+		 */
 		this.thumbnail = video.thumbnails.default.url;
+		/**
+		 * @type {Number}
+		 */
 		this.duration = this.calculateSongDuration(video.raw.contentDetails.duration);
-		this.startTime = -1; // Song has not started yet
+		/**
+		 * @type {Number}
+		 */
+		this.startTime = -1;
+		/**
+		 * @type {Discord.GuildMember}
+		 */
 		this.requestedBy = int.member;
 	}
 
@@ -16,21 +42,22 @@ module.exports = class Song {
 	 * @param {String} duration 
 	 */
 	calculateSongDuration(duration) {
-		const value_map = {
+		const VALUE_MAP = {
 			'S': 1,
 			'M': 60,
 			'H': 3600,
 			'D': 86400
 		};
-		const durationComponents = duration.slice(2).split(/(.+?[A-Z])/g);
-
+		
 		var time = 0;
-
-		durationComponents.forEach(element => {
-			if (element !== '') {
-				time += parseInt(element.slice(0, element.length - 1)) * value_map[element[element.length - 1]];
-			}
+		const components = duration.slice(2).split(/(.+?[A-Z])/g);
+		components.forEach(comp => {
+			if (comp === '') return;
+			let number = comp.slice(0, comp.length - 1);
+			let type = comp[comp.length - 1]
+			time += number * VALUE_MAP[type];
 		});
+
 		return time * 1000;
 	};
 }

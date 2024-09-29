@@ -1,7 +1,15 @@
 const Discord = require('discord.js');
+
+const Bot = require('./bot');
 const MusicQueue = require('./queue');
 
 module.exports = class Guild {
+	/**
+	 * 
+	 * @param {Bot} client 
+	 * @param {Discord.Guild} data 
+	 * @param {Object} info 
+	 */
 	constructor(client, data, info = {
 		prefix: client.PREFIX,
 		textChannel: '',
@@ -62,6 +70,11 @@ module.exports = class Guild {
 		return this.voiceChannel === '' ? true : this.voiceChannel === channelID;
 	}
 
+	/**
+	 * Checks whether this guild's soundboard has a sound with the given name
+	 * @param {String} command 
+	 * @returns
+	 */
 	hasSoundboard(command) {
 		return !!this.soundboard[command];
 	}

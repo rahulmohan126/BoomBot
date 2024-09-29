@@ -14,8 +14,7 @@ module.exports = {
 
 		// Checks if a search string exists.
 		if (query === '') {
-			bot.sendNotification('Please enter a search query or link to play a song', 'error', int);
-			return;
+			return bot.sendNotification('Please enter a search query or link to play a song', 'error', int);
 		}
 
 		// Checks if user is in a voice channel
@@ -44,7 +43,7 @@ module.exports = {
 		
 		// Checks if url is a playlist. If so, handles the video.
 		if (query.match(/^.*(youtu.be\/|list=)([^#\&\?]*).*/)) {
-			const playlist = await bot.youtube.getPlaylist(url);
+			const playlist = await bot.youtube.getPlaylist(query);
 			const videos = await playlist.getVideos();
 			
 			for (const video of Object.values(videos)) {

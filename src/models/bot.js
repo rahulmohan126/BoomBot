@@ -35,35 +35,6 @@ module.exports = class Bot extends Discord.Client {
 
 		// This dictionary redirects to commands (including aliases)
 		this.commandDict = {}
-
-		this.log = {
-			'audioStreamDisconnected': function (g) {
-				console.table({
-					Time: { Value: new Date().toLocaleString() },
-					Item: { Value: 'AudioStream' },
-					Status: { Value: 'Stream disconnected' },
-					Guild: { Value: g.name, Id: g.id }
-				}, ['Value', 'Id']);
-			},
-			'audioStreamConnected': function (int) {
-				console.table({
-					Time: { Value: new Date().toLocaleString() },
-					Item: { Value: 'AudioStream' },
-					Status: { Value: 'Stream connected' },
-					Guild: { Value: int.guild.name, Id: int.guild.id }
-				}, ['Value', 'Id']);
-			},
-			'commandInt': function (int, command) {
-				console.table({
-					Time: { Value: new Date().toLocaleString() },
-					Item: { Value: 'Message' },
-					Guild: { Value: int.guild.name, Id: Number(int.guild.id) },
-					Author: { Value: int.member.displayName, Id: Number(int.author.id) },
-					Content: { Value: int.content, Id: Number(int.id) },
-					Command: { Value: command }
-				}, ['Value', 'Id']);
-			}
-		}
 	}
 
 	/**
@@ -112,11 +83,8 @@ module.exports = class Bot extends Discord.Client {
 			let fileName = file.slice(0, -3);
 			try {
 				this.loadCommand(fileName);
-
-				if (process.env.LOGGING) console.table({ Command: fileName, Status: 'Loaded' });
 			} catch (error) {
 				console.log(error);
-				if (process.env.LOGGING) console.table({ Command: fileName, Status: 'Failed to load' });
 			}
 		}
 
@@ -138,11 +106,8 @@ module.exports = class Bot extends Discord.Client {
 
 					this.commands.push(command);
 					this.commandDict[fileName] = command;
-
-					// if (process.env.LOGGING) console.table({ Command: fileName, Status: 'Loaded' });
 				} catch (error) {
 					console.log(error);
-					if (process.env.LOGGING) console.table({ Command: fileName, Status: 'Failed to load' });
 				}
 			}
 			// Loads guild soundboard
@@ -153,20 +118,15 @@ module.exports = class Bot extends Discord.Client {
 					let subFileName = subfile.slice(0, -4);
 					try {
 						const command = this.createSoundboardCommand(subFileName, true);
-
 						const guild = this.getGuildByID(file);
 
-						if (guild) {
-							guild.soundboard[subFileName] = command;
-						}
-						else {
+						if (!guild) {
 							throw new Error('No guild with that id exists');
 						}
-
-						if (process.env.LOGGING) console.table({ Command: subFileName, Status: 'Loaded' });
+						
+						guild.soundboard[subFileName] = command;
 					} catch (error) {
 						console.log(error);
-						if (process.env.LOGGING) console.table({ Command: subFileName, Status: 'Failed to load' });
 					}
 				}
 			}
@@ -335,7 +295,13 @@ module.exports = class Bot extends Discord.Client {
 
 		Object.assign(embed, other);
 
-		return int.reply({ embeds: [embed], files: ['./icon.jpg']});
+		let msg = { embeds: [embed], files: ['./icon.jpg'] };
+
+		if (!int.commandName) {
+			return int.channel.send(msg);
+		}
+
+		return int.reply(msg);
 	}
 
 	/**
@@ -361,7 +327,9 @@ module.exports = class Bot extends Discord.Client {
 		this.loadSoundboard();
 	}
 
-
+	/**
+	 * Saves the current config values to file
+	 */
 	updateConfig() {
 		const config = {
 			BOTID: this.ID,
@@ -375,6 +343,10 @@ module.exports = class Bot extends Discord.Client {
 		fs.writeFileSync('./settings.json', JSON.stringify(config, null, 2));
 	}
 
+	/**
+	 * Updates the YouTube agent to use a new proxy (or not if newProxy is null)
+	 * @param {String|null} newProxy 
+	 */
 	buildAgent(newProxy) {
 		this.agent = (newProxy === null) ? ytdl.createAgent(this.cookies) : ytdl.createProxyAgent(newProxy, this.cookies);
 		this.PROXY = newProxy;

@@ -1,7 +1,10 @@
 const Discord = require('discord.js');
 const DiscordVoice = require('@discordjs/voice');
+const YouTube = require('simple-youtube-api');
 const ytdl = require('@distube/ytdl-core');
 
+const Bot = require('./bot');
+const Guild = require('./guild');
 const Song = require('./song');
 
 function PromiseTimeout(delayms) {
@@ -11,6 +14,10 @@ function PromiseTimeout(delayms) {
 }
 
 module.exports = class MusicQueue {
+	/**
+	 * @param {Bot} client
+	 * @param {Guild} guild 
+	 */
 	constructor(client, guild) {
 		// Channels to send data to
 		this.client = client;
@@ -54,7 +61,6 @@ module.exports = class MusicQueue {
 		if (this.player) this.player.stop();
 		if (this.connection) {
 			this.connection.destroy();
-			this.client.log['audioStreamDisconnected'](this.guild);
 		}
 
 		this.text = null;
@@ -72,6 +78,12 @@ module.exports = class MusicQueue {
 		this.nowPlaying = null;
 	}
 
+	/**
+	 * Creates async process to end the voice channel connection after
+	 * 5 minutes. If breakTime is changed between when the process started and when
+	 * the process is about to complete, the end is terminated (implies another song
+	 * started playing while waiting).
+	 */
 	async delayedEnd() {
 		this.inUse = false;
 		this.nowPlaying = null;
@@ -111,7 +123,7 @@ module.exports = class MusicQueue {
 
 	/**
 	 * 
-	 * @param {youtube.Video} video 
+	 * @param {YouTube.Video} video 
 	 * @param {Discord.ChatInputCommandInteraction} int 
 	 * @param {Discord.VoiceChannel} voiceChannel 
 	 * @param {boolean} playlist 
@@ -139,8 +151,6 @@ module.exports = class MusicQueue {
 				this.playing = true;
 				this.inUse = true
 				await this.join();
-
-				this.client.log['audioStreamConnected'](int);
 
 				this.connection.on('disconnected', () => {
 					this.end();
@@ -209,6 +219,12 @@ module.exports = class MusicQueue {
 		this.player.play(resource);
 		this.connection.subscribe(this.player);
 
+		this.player.on('error', err => {
+			if (err.message.startsWith('Hostname/IP does not match')) {
+				console.log(`Request via proxy blocked when using "${this.client.PROXY}"`);
+			}
+		})
+
 		stream.on('error', () => {
 			this.client.sendNotification(`Sorry, there was an error processing "${this.nowPlaying.title}", moving to the next song in the queue`, 'error', {
 				'channel': this.text, 'member': song.requestedBy
@@ -238,8 +254,15 @@ module.exports = class MusicQueue {
 	}
 
 
+	/**
+	 * Plays a file from the sounboard database into a voice channel
+	 * @param {Discord.ChatInputCommandInteraction} int 
+	 * @param {Discord.VoiceChannel} voiceChannel 
+	 * @param {String} fileName 
+	 * @param {boolean} guildCommand 
+	 */
 	async playFile(int, voiceChannel, fileName, guildCommand) {
-		// Prevents overriding.
+		// Prevents overriding music being played
 		if (this.inUse) {
 			return;
 		}
