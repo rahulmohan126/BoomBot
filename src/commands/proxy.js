@@ -15,25 +15,25 @@ module.exports = {
 	 * @param {ChatInputCommandInteraction} int 
 	 */
 	main: async function (bot, guild, int) {
-        // Ignore non-owner users
-        if (guild.checkPerms(int.member) !== 0) {
-            return;
-        }
+		// Ignore non-owner users
+		if (guild.checkPerms(int.member) !== 0) {
+			return;
+		}
 
-        var address = int.options.getString('proxy-link');
+		var address = int.options.getString('proxy-link');
 
-        if (address === 'off') {
+		if (address === 'off') {
 			address = null;
 		}
-        else if (!address.match(PROXY_REGEX)) {
-            return;
-        }
+		else if (!address.match(PROXY_REGEX)) {
+			return;
+		}
 
-        bot.buildAgent(address);
-        bot.sendNotification('Proxy changed!', 'success', int);
-    },
-    help: 'Pro',
-    usage: 'proxy [new proxy]',
-    module: 'admin',
-    hide: true
+		bot.buildAgent(address);
+		bot.sendNotification('Proxy changed!', 'success', int);
+	},
+	help: 'Pro',
+	usage: 'proxy [new proxy]',
+	module: 'admin',
+	hide: true
 }

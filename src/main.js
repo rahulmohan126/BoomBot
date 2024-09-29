@@ -49,7 +49,7 @@ function interactionCreate(int) {
 	if (!int.isChatInputCommand()) return;
 	
 	let name = int.commandName;
-	if (int.options.getSubcommand()) {
+	if (int.options.getSubcommand(false)) {
 		name += '_' + int.options.getSubcommand();
 	}
 
