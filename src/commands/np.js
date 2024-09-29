@@ -1,9 +1,17 @@
 const BAR_LENGTH = 20;
+const Bot = require('../models/bot');
+const Guild = require('../models/guild');
+const { ChatInputCommandInteraction } = require('discord.js');
 
 module.exports = {
-	main: function (bot, guild, msg) {
+	/**
+	 * @param {Bot} bot 
+	 * @param {Guild} guild 
+	 * @param {ChatInputCommandInteraction} int 
+	 */
+	main: async function (bot, guild, int) {
 		if (!guild.queue.inUse) {
-			return bot.sendNotification('There is no music playing at the moment...', 'error', msg);
+			return bot.sendNotification('There is no music playing at the moment...', 'error', int);
 		}
 
 		const ratio = (Date.now() - guild.queue.nowPlaying.startTime) / guild.queue.nowPlaying.duration;
@@ -11,7 +19,7 @@ module.exports = {
 		const timeLeftInSong = guild.queue.timeToString(Date.now() - guild.queue.nowPlaying.startTime);
 		const songDuration = guild.queue.timeToString(guild.queue.nowPlaying.duration);
 
-		bot.sendNotification(`
+		bot.sendEmbed('Now Playing', `
 🎶 **[${guild.queue.nowPlaying.title}](${guild.queue.nowPlaying.url})**
 
 |${'-'.repeat(leftPad)}🔘${'-'.repeat(rightPad)}|
@@ -19,7 +27,7 @@ module.exports = {
 **Looped:** ${guild.queue.looping ? 'Looped' : 'Not looped'}
 **Duration:** \`${timeLeftInSong} / ${songDuration}\`
 **Requested By:** ${guild.queue.nowPlaying.requestedBy.displayName}
-`, 'info', msg, [], 'Now Playing');
+`, 'info', int);
 	},
 	help: 'See what song is playing and how much time is left.',
 	usage: 'np',

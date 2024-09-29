@@ -3,12 +3,13 @@ const startTime = Date.now();
 
 //#region  ---------------------	Packages	---------------------
 const fs = require('fs');
+const Discord = require('discord.js');
 const { GatewayIntentBits } = require('discord.js');
-const Bot = require("./models/bot");
+const Bot = require('./models/bot');
 
 //#endregion
 //#region  ---------------------	Setup		---------------------
-process.env.LOGGING = true;
+process.env.LOGGING = false;
 
 const config = JSON.parse(fs.readFileSync(`./settings.json`));
 const cookies = JSON.parse(fs.readFileSync(`./cookies.json`));
@@ -23,42 +24,41 @@ const bot = new Bot({ autoReconnect: true, intents: [
 //#endregion
 //#region  ---------------------	Handlers	---------------------
 
-bot.on('ready', () => {
+bot.on('ready', async () => {
 	bot.start();
 	bot.user.setActivity(`over ${bot.guilds.cache.size} servers...`, { type: 'WATCHING' });
 
 	const startuptime = Date.now() - startTime;
 	if (process.env.LOGGING) {
-		console.log("ACTIVE SERVERS: ")
+		console.log('ACTIVE SERVERS: ')
 		bot.guilds.cache.each(guild => console.log(`${guild.id} | ${guild.name}`));
 	}
+
+	const commands = require('./slash');
+	commands.forEach(async (cmd) => {
+		await bot.application.commands.create(cmd);
+	});
+
 	console.log(`\nReady to begin! Serving in ${bot.guilds.cache.size} servers. Startup time: ${startuptime}ms`);
 });
 
-bot.on('messageCreate', msg => {
-	const guild = bot.getGuild(msg.guild);
-	if (msg.author.id === bot.ID || !guild.validMessage(msg)) {
-		return;
+/**
+ * @param {Discord.ChatInputCommandInteraction} int
+ */
+function interactionCreate(int) {
+	if (!int.isChatInputCommand()) return;
+	
+	let name = int.commandName;
+	if (int.options.getSubcommand()) {
+		name += '_' + int.options.getSubcommand();
 	}
 
-	const command = guild.extractCommand(msg);
-
-	if (bot.commandDict[command]) {
-		// Logs guild, author, and message if enabled
-		if (process.env.LOGGING) bot.log['commandMsg'](msg, command);
-
-		// Runs the command
-		bot.runCommand(command, guild, msg);
+	if (bot.commandDict[name]) {
+		const guild = bot.getGuild(int.guild);
+		bot.runCommand(name, guild, int);
 	}
-	// Seperate condition for guild soundboards.
-	else if (guild.hasSoundboard(command)) {
-		// Logs guild, author, and message if enabled
-		if (process.env.LOGGING) bot.log['commandMsg'](msg, command);
-
-		// Runs the command
-		guild.soundboard[command].main(bot, guild, msg);
-	}
-});
+}
+bot.on('interactionCreate', interactionCreate);
 
 bot.on('voiceStateUpdate', (oldState, newState) => {
 	const guild = bot.getGuild(oldState.guild);

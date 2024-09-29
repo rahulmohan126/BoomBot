@@ -2,7 +2,7 @@ const Discord = require('discord.js');
 const DiscordVoice = require('@discordjs/voice');
 const ytdl = require('@distube/ytdl-core');
 
-const Song = require("./song");
+const Song = require('./song');
 
 function PromiseTimeout(delayms) {
 	return new Promise(function (resolve, reject) {
@@ -112,35 +112,35 @@ module.exports = class MusicQueue {
 	/**
 	 * 
 	 * @param {youtube.Video} video 
-	 * @param {Discord.Message} msg 
+	 * @param {Discord.ChatInputCommandInteraction} int 
 	 * @param {Discord.VoiceChannel} voiceChannel 
 	 * @param {boolean} playlist 
 	 */
-	async handleVideo(video, msg, voiceChannel, playlist = false) {
+	async handleVideo(video, int, voiceChannel, playlist = false) {
 		// Handles video exception
 		if (video.description === 'This video is unavailable.' || video.description === 'This video is private.') {
-			return this.client.sendNotification('Video is private or unavailable', 'error', msg);
+			return this.client.sendNotification('Video is private or unavailable', 'error', int);
 		}
 
 		// Creates a "song"
 		video = await this.client.youtube.getVideoByID(video.id);
 		if (video.raw.contentDetails.duration === 'P0D') {
-			return this.client.sendNotification('Cannot play livestreams', 'error', msg);
+			return this.client.sendNotification('Cannot play livestreams', 'error', int);
 		}
 
-		const song = new Song(video, msg);
+		const song = new Song(video, int);
 
 		// Joins channel and handles all exceptions
 		try {
 			// Creates connection if not existent.
 			if (!this.connection) {
-				this.text = msg.channel;
+				this.text = int.channel;
 				this.voice = voiceChannel;
 				this.playing = true;
 				this.inUse = true
 				await this.join();
 
-				this.client.log['audioStreamConnected'](msg);
+				this.client.log['audioStreamConnected'](int);
 
 				this.connection.on('disconnected', () => {
 					this.end();
@@ -150,24 +150,23 @@ module.exports = class MusicQueue {
 			this.songs.push(song);
 
 			if (!playlist) {
-				this.client.sendNotification('', 'success', {
-					channel: this.text, member: song.requestedBy
-				}, [
+				this.client.sendEmbed('Added to queue', [
 					{
-						name: "Duration",
+						name: 'Duration',
 						value: `\`${this.timeToString(song.duration)}\``,
 						inline: true
 					},
 					{
-						name: "Time Until Played",
+						name: 'Time Until Played',
 						value: `\`${this.timeToString(!this.nowPlaying ? 0 : (this.totalTime - song.duration))}\``,
 						inline: true
 					},
 					{
-						name: "Requested By",
-						value: `\`${msg.member.displayName}\``
+						name: 'Requested By',
+						value: `\`${int.member.displayName}\``,
+						inline: true
 					}
-				], 'Added to queue', {
+				], 'success', int, {
 					title: song.title,
 					thumbnail: { url: song.thumbnail },
 					url: song.url
@@ -178,7 +177,7 @@ module.exports = class MusicQueue {
 			if (!this.nowPlaying) this.play(this.songs[0]);
 		} catch (err) {
 			console.log(err);
-			this.client.sendNotification('Could not join voice channel', 'error', msg);
+			this.client.sendNotification('Could not join voice channel', 'error', int);
 		}
 	}
 
@@ -233,13 +232,13 @@ module.exports = class MusicQueue {
 			else this.play(this.songs[0]);
 		});
 
-		this.client.sendNotification(`🎶 [**${song.title}**](${song.url})`, 'success', {
+		this.client.sendEmbed('Started playing', `🎶 [**${song.title}**](${song.url})`, 'success', {
 			'channel': this.text, 'member': song.requestedBy
-		}, [], 'Started playing');
+		});
 	}
 
 
-	async playFile(msg, voiceChannel, fileName, guildCommand) {
+	async playFile(int, voiceChannel, fileName, guildCommand) {
 		// Prevents overriding.
 		if (this.inUse) {
 			return;
@@ -250,7 +249,7 @@ module.exports = class MusicQueue {
 		await this.join();
 
 		if (!this.connection) {
-			this.client.sendNotification('Cannot join this voice channel', 'error', msg);
+			this.client.sendNotification('Cannot join this voice channel', 'error', int);
 			return;
 		}
 

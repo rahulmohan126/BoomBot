@@ -1,10 +1,19 @@
+const Bot = require('../models/bot');
+const Guild = require('../models/guild');
+const { ChatInputCommandInteraction } = require('discord.js');
+
 module.exports = {
-	main: function (bot, guild, msg) {
+	/**
+	 * @param {Bot} bot 
+	 * @param {Guild} guild 
+	 * @param {ChatInputCommandInteraction} int 
+	 */
+	main: async function (bot, guild, int) {
 		const start = Date.now();
-		msg.channel.send('Pong!').then(function (msg) {
-			const latency = Date.now() - start;
-			msg.edit(`Pong \`(${latency}ms)\``);
-		});
+		int = await int.reply('Pong!');
+		
+		const latency = Date.now() - start;
+		int.edit(`Pong \`(${latency}ms)\``);
 	},
 	help: 'Ping the server for latency',
 	usage: 'ping',

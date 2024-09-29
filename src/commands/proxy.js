@@ -4,22 +4,33 @@ const IP_ADRR = '(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[
 const PORT = ':\\d{1,5}'
 const PROXY_REGEX = new RegExp(`^(${PROTOCOL})((${DOMAIN})|(${IP_ADRR}))(${PORT})$`);
 
+const Bot = require('../models/bot');
+const Guild = require('../models/guild');
+const { ChatInputCommandInteraction } = require('discord.js');
+
 module.exports = {
-    main: function (bot, guild, msg) {
+	/**
+	 * @param {Bot} bot 
+	 * @param {Guild} guild 
+	 * @param {ChatInputCommandInteraction} int 
+	 */
+	main: async function (bot, guild, int) {
         // Ignore non-owner users
-        if (guild.checkPerms(msg.member) !== 0) {
+        if (guild.checkPerms(int.member) !== 0) {
             return;
         }
 
-        if (msg.content === "off") {
-			msg.content = null;
+        var address = int.options.getString('proxy-link');
+
+        if (address === 'off') {
+			address = null;
 		}
-        else if (!msg.content.match(PROXY_REGEX)) {
+        else if (!address.match(PROXY_REGEX)) {
             return;
         }
 
-        bot.buildAgent(msg.content);
-        bot.sendNotification('Proxy changed!', 'success', msg);
+        bot.buildAgent(address);
+        bot.sendNotification('Proxy changed!', 'success', int);
     },
     help: 'Pro',
     usage: 'proxy [new proxy]',

@@ -1,5 +1,5 @@
 const Discord = require('discord.js');
-const MusicQueue = require("./queue");
+const MusicQueue = require('./queue');
 
 module.exports = class Guild {
 	constructor(client, data, info = {
@@ -60,33 +60,6 @@ module.exports = class Guild {
 	 */
 	checkVoiceChannelByID(channelID) {
 		return this.voiceChannel === '' ? true : this.voiceChannel === channelID;
-	}
-
-	/**
-	 * Checks the validity of a message
-	 * @param {Discord.Message} msg 
-	 */
-	validMessage(msg) {
-		return (this.checkTextChannelByID(msg.channel.id) ||
-			this.checkPerms(msg.member) < 2) && (msg.content.startsWith(this.prefix) || msg.content.startsWith(`<@${this.client.ID}>`));
-	}
-
-	/**
-	 * Removed the prefix or bot mention from the start of the message
-	 * @param {Discord.Message} msg 
-	 */
-	extractCommand(msg) {
-		if (msg.content.startsWith(this.prefix)) {
-			msg.content = msg.content.replace(this.prefix, '').trimStart();
-		}
-		else if (msg.content.startsWith(`<@${this.client.ID}>`)) {
-			msg.content = msg.content.replace(`<@${this.client.ID}>`, '').trimStart();
-		}
-
-		const command = msg.content.split(' ')[0].toLowerCase();
-		msg.content = msg.content.replace(command, '').trimStart();
-
-		return command;
 	}
 
 	hasSoundboard(command) {

@@ -1,14 +1,14 @@
 const Discord = require('discord.js');
 
 module.exports = class Song {
-	constructor(video, msg) {
+	constructor(video, int) {
 		this.id = video.id;
 		this.title = Discord.escapeMarkdown(video.title);
 		this.url = `https://www.youtube.com/watch?v=${video.id}`;
 		this.thumbnail = video.thumbnails.default.url;
 		this.duration = this.calculateSongDuration(video.raw.contentDetails.duration);
 		this.startTime = -1; // Song has not started yet
-		this.requestedBy = msg.member;
+		this.requestedBy = int.member;
 	}
 
 	/**

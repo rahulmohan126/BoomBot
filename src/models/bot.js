@@ -3,8 +3,8 @@ const YouTube = require('simple-youtube-api');
 const ytdl = require('@distube/ytdl-core');
 const fs = require('fs');
 
-const Guild = require("./guild");
-const Command = require("./command");
+const Guild = require('./guild');
+const Command = require('./command');
 
 module.exports = class Bot extends Discord.Client {
 	constructor(options, config, cookies) {
@@ -20,10 +20,10 @@ module.exports = class Bot extends Discord.Client {
 		this.PROXY = config.PROXY;
 
 		this.COLORS = {
-			DEFAULT: 0x351C75,
-			SUCCESS: 0x66bb69,
-			ERROR: 0xEF5250,
-			INFO: 0x03A8F4
+			default: 0x351C75,
+			success: 0x66bb69,
+			error: 0xEF5250,
+			info: 0x03A8F4
 		}
 		
 		this.cookies = cookies;
@@ -45,21 +45,21 @@ module.exports = class Bot extends Discord.Client {
 					Guild: { Value: g.name, Id: g.id }
 				}, ['Value', 'Id']);
 			},
-			'audioStreamConnected': function (msg) {
+			'audioStreamConnected': function (int) {
 				console.table({
 					Time: { Value: new Date().toLocaleString() },
 					Item: { Value: 'AudioStream' },
 					Status: { Value: 'Stream connected' },
-					Guild: { Value: msg.guild.name, Id: msg.guild.id }
+					Guild: { Value: int.guild.name, Id: int.guild.id }
 				}, ['Value', 'Id']);
 			},
-			'commandMsg': function (msg, command) {
+			'commandInt': function (int, command) {
 				console.table({
 					Time: { Value: new Date().toLocaleString() },
 					Item: { Value: 'Message' },
-					Guild: { Value: msg.guild.name, Id: Number(msg.guild.id) },
-					Author: { Value: msg.member.displayName, Id: Number(msg.author.id) },
-					Content: { Value: msg.content, Id: Number(msg.id) },
+					Guild: { Value: int.guild.name, Id: Number(int.guild.id) },
+					Author: { Value: int.member.displayName, Id: Number(int.author.id) },
+					Content: { Value: int.content, Id: Number(int.id) },
 					Command: { Value: command }
 				}, ['Value', 'Id']);
 			}
@@ -234,11 +234,11 @@ module.exports = class Bot extends Discord.Client {
 
 	createSoundboardCommand(fileName, guildCommand = false) {
 		return new Command(fileName, {
-			main: function (bot, guild, msg) {
-				const voiceChannel = msg.member.voice.channel;
+			main: function (bot, guild, int) {
+				const voiceChannel = int.member.voice.channel;
 
 				if (voiceChannel && guild.checkVoiceChannelByID(voiceChannel.id)) {
-					guild.queue.playFile(msg, voiceChannel, fileName, guildCommand);
+					guild.queue.playFile(int, voiceChannel, fileName, guildCommand);
 				}
 			},
 			help: 'A soundboard effect',
@@ -251,10 +251,10 @@ module.exports = class Bot extends Discord.Client {
 	 * Runs a command from a m
 	 * @param {Command} command 
 	 * @param {Guild} guild 
-	 * @param {Discord.Message} msg 
+	 * @param {Discord.ChatInputCommandInteraction} int 
 	 */
-	runCommand(command, guild, msg) {
-		this.commandDict[command].main(this, guild, msg);
+	runCommand(command, guild, int) {
+		this.commandDict[command].main(this, guild, int);
 	}
 
 	/**
@@ -286,51 +286,56 @@ module.exports = class Bot extends Discord.Client {
 
 	/**
 	 * Sends a embed notification from the bot
+	 * @param {String} text 
+	 * @param {String} code 
+	 * @param {Discord.ChatInputCommandInteraction} int 
 	 */
-	sendNotification(info, code, msg, fields = [], header = null, other = {}) {
-		let includedFiles = [];
-		var color;
-
-		if (code === 'success') color = this.COLORS.SUCCESS;
-		else if (code === 'error') color = this.COLORS.ERROR;
-		else if (code === 'info') color = this.COLORS.INFO;
-		else color = this.COLORS.DEFAULT;
-
+	sendNotification(text, type, int) {
 		let embed = {
-			color: color,
+			description: text,
+			color: this.COLORS[type],
 			timestamp: new Date(),
-			fields: fields,
 		};
 
-		if (info !== '') {
-			embed.description = info;
+		if (!int.commandName) {
+			return int.channel.send({ embeds: [embed] });
 		}
 
-		if (header && msg.member) {
-			includedFiles = ['./icon.jpg'];
+		return int.reply({ embeds: [embed] });
+	}
 
-			embed.author = {
+	/**
+	 * 
+	 * @param {String} header 
+	 * @param {String|Discord.APIEmbedField[]} body 
+	 * @param {String} type 
+	 * @param {Discord.ChatInputCommandInteraction} int 
+	 * @param {Discord.APIEmbed} other
+	 */
+	sendEmbed(header, body, type, int, other = null) {
+		let embed = {
+			color: this.COLORS[type],
+			timestamp: new Date(),
+			author:  {
 				name: header,
 				iconURL: 'attachment://icon.jpg'
+			},
+			footer: {
+				text: int.member.displayName,
+				iconURL: int.member.user.displayAvatarURL()
 			}
+		};
 
-			embed.footer = {
-				text: msg.member.displayName,
-				iconURL: msg.member.user.displayAvatarURL()
-			}
+		if (typeof(body) === 'string') {
+			embed.description = body;
 		}
-		else if (msg.member) {
-			embed.footer = {
-				name: msg.member.displayName,
-				iconURL: msg.member.user.displayAvatarURL()
-			}
-		}
-
-		if (other) {
-			Object.assign(embed, other);
+		else {
+			embed.fields = body;
 		}
 
-		return msg.channel.send({ embeds: [embed], files: includedFiles });
+		Object.assign(embed, other);
+
+		return int.reply({ embeds: [embed], files: ['./icon.jpg']});
 	}
 
 	/**
@@ -367,7 +372,7 @@ module.exports = class Bot extends Discord.Client {
 			PROXY: this.PROXY
 		}
 
-		fs.writeFileSync("./settings.json", JSON.stringify(config, null, 2));
+		fs.writeFileSync('./settings.json', JSON.stringify(config, null, 2));
 	}
 
 	buildAgent(newProxy) {

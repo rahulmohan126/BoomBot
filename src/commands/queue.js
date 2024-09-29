@@ -1,9 +1,18 @@
 const QUEUE_LIMIT = 20
 
+const Bot = require('../models/bot');
+const Guild = require('../models/guild');
+const { ChatInputCommandInteraction } = require('discord.js');
+
 module.exports = {
-	main: function (bot, guild, msg) {
+	/**
+	 * @param {Bot} bot 
+	 * @param {Guild} guild 
+	 * @param {ChatInputCommandInteraction} int 
+	 */
+	main: async function (bot, guild, int) {
 		if (!guild.queue.inUse) {
-			return bot.sendNotification('There is no music playing at the moment...', 'error', msg);
+			return bot.sendNotification('There is no music playing at the moment...', 'error', int);
 		}
 
 		var queueStr = '';
@@ -20,13 +29,13 @@ module.exports = {
 			queueStr += `\n${numOverflow} more unlisted songs in queue.`
 		}
 
-		bot.sendNotification(`
+		bot.sendEmbed('Song Queue', `
 ${queueStr}
 
 **Looped:** ${guild.queue.looping ? 'Looped' : 'Not looped'}
 **Now playing:** ${guild.queue.nowPlaying.title}
 **Time Left in Queue:** ${guild.queue.timeToString(guild.queue.totalTime)}
-		`, 'info', msg, [], 'Song Queue');
+		`, 'info', int);
 	},
 	help: 'Gets all the songs in the queue.',
 	usage: 'queue',

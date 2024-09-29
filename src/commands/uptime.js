@@ -2,8 +2,17 @@ const MIN_SEC = 60;
 const HR_SEC = MIN_SEC * 60
 const DAYS_SEC = HR_SEC * 24;
 
+const Bot = require('../models/bot');
+const Guild = require('../models/guild');
+const { ChatInputCommandInteraction } = require('discord.js');
+
 module.exports = {
-	main: function (bot, guild, msg) {
+	/**
+	 * @param {Bot} bot 
+	 * @param {Guild} guild 
+	 * @param {ChatInputCommandInteraction} int 
+	 */
+	main: async function (bot, guild, int) {
 		var time = Math.round((Date.now() - bot.START_TIME) / 1000);
 		
 		let timeString = '';
@@ -23,7 +32,7 @@ module.exports = {
 			timeString += time + 's';
 		}
 
-		msg.channel.send(`Uptime: \`${timeString}\``);
+		int.reply(`Uptime: \`${timeString}\``);
 	},
 	help: 'See how long the server has been online.',
 	usage: 'uptime',
