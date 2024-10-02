@@ -7,9 +7,13 @@ const Bot = require('./bot');
 const Guild = require('./guild');
 const Song = require('./song');
 
-function PromiseTimeout(delayms) {
+/**
+ * Sleep function that pauses the current thread by the specified time
+ * @param {Number} delayMs Number of milliseconds to delay
+ */
+function PromiseTimeout(delayMs) {
 	return new Promise(function (resolve, reject) {
-		setTimeout(resolve, delayms);
+		setTimeout(resolve, delayMs);
 	});
 }
 
@@ -115,9 +119,12 @@ module.exports = class MusicQueue {
 	 * Returns the remaining play time of the queue
 	 */
 	get totalTime() {
-		if (this.songs.length === 0 && !this.nowPlaying) return 0;
+		if (this.songs.length === 0 && !this.nowPlaying) {
+			return 0;
+		}
+
 		var totalTime = this.songs.reduce((acc, cur) => acc + cur.duration, 0);
-		totalTime += this.nowPlaying.duration - (Date.now() - this.nowPlaying.startTime);
+		totalTime += this.nowPlaying.duration - this.resource.playbackDuration;
 		return totalTime;
 	}
 
@@ -163,7 +170,7 @@ module.exports = class MusicQueue {
 				this.client.sendEmbed('Added to queue', [
 					{
 						name: 'Duration',
-						value: `\`${this.timeToString(song.duration)}\``,
+						value: `\`${song.durationStr}\``,
 						inline: true
 					},
 					{
@@ -214,9 +221,8 @@ module.exports = class MusicQueue {
 		});
 
 		this.player = DiscordVoice.createAudioPlayer();
-		let resource = DiscordVoice.createAudioResource(stream, { inlineVolume: true });
-		resource.volume.setVolume(0.5);
-		this.player.play(resource);
+		this.resource = DiscordVoice.createAudioResource(stream);
+		this.player.play(this.resource);
 		this.connection.subscribe(this.player);
 
 		this.player.on('error', err => {
@@ -225,10 +231,10 @@ module.exports = class MusicQueue {
 			}
 		})
 
-		stream.on('error', () => {
-			this.client.sendNotification(`Sorry, there was an error processing "${this.nowPlaying.title}", moving to the next song in the queue`, 'error', {
-				'channel': this.text, 'member': song.requestedBy
-			});
+		stream.on('error', err => {
+			console.log(err);
+			let errorMsg = `Sorry, there was an error processing "${this.nowPlaying.title}", moving to the next song in the queue`;
+			this.client.sendNotification(errorMsg, 'error', null, this.text);
 			this.looping = false;
 			stream.destroy();
 			this.player.stop();

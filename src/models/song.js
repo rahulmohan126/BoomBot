@@ -28,9 +28,9 @@ module.exports = class Song {
 		 */
 		this.duration = this.calculateSongDuration(video.raw.contentDetails.duration);
 		/**
-		 * @type {Number}
+		 * @type {String}
 		 */
-		this.startTime = -1;
+		this.durationStr = this.generateDurationStr();
 		/**
 		 * @type {Discord.GuildMember}
 		 */
@@ -60,4 +60,18 @@ module.exports = class Song {
 
 		return time * 1000;
 	};
+
+	/**
+	 * @returns {String} String format of the song duration
+	 */
+	generateDurationStr() {
+		var returnStr = new Date(this.duration).toUTCString().split(' ')[4];
+
+		// Removes hour section if not necessary
+		if (returnStr.startsWith('00:')) {
+			return returnStr.substring(3);
+		}
+
+		return returnStr;
+	}
 }

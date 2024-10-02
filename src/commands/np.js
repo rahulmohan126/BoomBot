@@ -13,11 +13,14 @@ module.exports = {
 		if (!guild.queue.inUse) {
 			return bot.sendNotification('There is no music playing at the moment...', 'error', int);
 		}
+		
 
-		const ratio = (Date.now() - guild.queue.nowPlaying.startTime) / guild.queue.nowPlaying.duration;
+		const progress = guild.queue.resource.playbackDuration;
+		const ratio = progress / guild.queue.nowPlaying.duration;
+
 		const leftPad = Math.round(ratio * BAR_LENGTH), rightPad = BAR_LENGTH - leftPad;
-		const timeLeftInSong = guild.queue.timeToString(Date.now() - guild.queue.nowPlaying.startTime);
-		const songDuration = guild.queue.timeToString(guild.queue.nowPlaying.duration);
+		const timeLeftInSong = guild.queue.timeToString(progress);
+		const songDuration = guild.queue.nowPlaying.durationStr;
 
 		bot.sendEmbed('Now Playing', `
 🎶 **[${guild.queue.nowPlaying.title}](${guild.queue.nowPlaying.url})**
