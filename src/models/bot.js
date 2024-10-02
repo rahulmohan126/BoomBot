@@ -7,10 +7,10 @@ const Guild = require('./guild');
 const Command = require('./command');
 
 module.exports = class Bot extends Discord.Client {
-	constructor(options, config, cookies) {
+	constructor(startTime, options, config, cookies) {
 		super(options);
 
-		this.START_TIME = Date.now();
+		this.START_TIME = startTime;
 
 		this.ID = config.BOTID;
 		this.OWNERID = config.OWNERID;
@@ -71,6 +71,28 @@ module.exports = class Bot extends Discord.Client {
 
 	}
 
+	
+	/**
+	 * Loads a command indentified by its primary name
+	 * @param {String} name Command name
+	 */
+	loadCommand(name) {
+		const directory = `../commands/${name}.js`;
+
+		let command = new Command(name, require(directory));
+
+		this.commands.push(command);
+		this.commandDict[name] = command;
+
+		if (command.aliases !== undefined) {
+			for (let alias of command.aliases) {
+				this.commandDict[alias] = command;
+			}
+		}
+
+		return true;
+	}
+
 	/**
 	 * Loads all the bot commands
 	 */
@@ -83,7 +105,8 @@ module.exports = class Bot extends Discord.Client {
 			let fileName = file.slice(0, -3);
 			try {
 				this.loadCommand(fileName);
-			} catch (error) {
+			}
+			catch (error) {
 				console.log(error);
 			}
 		}
@@ -133,63 +156,11 @@ module.exports = class Bot extends Discord.Client {
 		}
 	}
 
-	/**
-	 * Unloads a command indentified by its primary name
-	 * @param {String} name Command name
-	 */
-	unloadCommand(name) {
-		const directory = `./commands/${name}.js`;
-
-		let command = this.commands.find(command => command.name === name);
-
-		if (!command) {
-			console.error('Command not found');
-			return false;
-		}
-		else if (command.soundboard) {
-			console.error('Soundboard noises cannot be reloaded');
-			return false;
-		}
-
-		// Removes the command from the list
-		this.commands = this.commands.filter(command => command.name !== name);
-
-		delete this.commandDict[name];
-
-		// Deletes the command from the dict
-		if (command.aliases !== undefined) {
-			command.aliases.forEach(alias => {
-				delete this.commandDict[alias];
-			});
-		}
-
-		// Deletes the command at source and the cache
-		command = null;
-		delete require.cache[require.resolve(directory)];
-
-		return true;
-	}
-
-	/**
-	 * Loads a command indentified by its primary name
-	 * @param {String} name Command name
-	 */
-	loadCommand(name) {
-		const directory = `../commands/${name}.js`;
-
-		let command = new Command(name, require(directory));
-
-		this.commands.push(command);
-
-		this.commandDict[name] = command;
-
-		if (command.aliases !== undefined) {
-			for (let alias of command.aliases) {
-				this.commandDict[alias] = command;
-			}
-		}
-
-		return true;
+	registerCommands() {
+		const commands = require('../slash');
+		commands.forEach(async (cmd) => {
+			await this.application.commands.create(cmd);
+		});
 	}
 
 	createSoundboardCommand(fileName, guildCommand = false) {
@@ -249,16 +220,20 @@ module.exports = class Bot extends Discord.Client {
 	 * @param {String} text 
 	 * @param {String} code 
 	 * @param {Discord.ChatInputCommandInteraction} int 
+	 * @param {Discord.TextBasedChannel?} channel 
 	 */
-	sendNotification(text, type, int) {
+	sendNotification(text, type, int, channel=null) {
 		let embed = {
 			description: text,
 			color: this.COLORS[type],
 			timestamp: new Date(),
 		};
 
-		if (!int.commandName) {
-			return int.channel.send({ embeds: [embed] });
+		/**
+		 * Alternate send if there isn't a specific interaction to respond to
+		 */
+		if (channel) {
+			return channel.send({ embeds: [embed] });
 		}
 
 		return int.reply({ embeds: [embed] });
@@ -270,7 +245,7 @@ module.exports = class Bot extends Discord.Client {
 	 * @param {String|Discord.APIEmbedField[]} body 
 	 * @param {String} type 
 	 * @param {Discord.ChatInputCommandInteraction} int 
-	 * @param {Discord.APIEmbed} other
+	 * @param {Discord.APIEmbed?} other
 	 */
 	sendEmbed(header, body, type, int, other = null) {
 		let embed = {
@@ -324,6 +299,7 @@ module.exports = class Bot extends Discord.Client {
 		this.initData();
 		this.loadGuilds();
 		this.loadCommands();
+		this.registerCommands();
 		this.loadSoundboard();
 	}
 
@@ -351,5 +327,80 @@ module.exports = class Bot extends Discord.Client {
 		this.agent = (newProxy === null) ? ytdl.createAgent(this.cookies) : ytdl.createProxyAgent(newProxy, this.cookies);
 		this.PROXY = newProxy;
 		this.updateConfig();	
+	}
+
+	onReady() {
+		this.start();
+		this.user.setActivity(`over ${this.guilds.cache.size} servers...`, { type: 'WATCHING' });
+	
+		const startuptime = Date.now() - this.START_TIME;
+		console.log('ACTIVE SERVERS: ')
+		this.guilds.cache.each(guild => console.log(`${guild.id} | ${guild.name}`));
+	
+		console.log(`\nReady to begin! Serving in ${this.guilds.cache.size} servers. Startup time: ${startuptime}ms`);
+	}
+
+	/**
+	 * @param {Discord.ChatInputCommandInteraction} int
+	 */
+	onInteractionCreate(int) {
+		if (!int.isChatInputCommand()) return;
+		
+		let name = int.commandName;
+		if (int.options.getSubcommand(false)) {
+			name += '_' + int.options.getSubcommand();
+		}
+
+		if (this.commandDict[name]) {
+			const guild = this.getGuild(int.guild);
+			this.runCommand(name, guild, int);
+		}
+	}
+
+	/**
+	 * @param {Discord.VoiceState} oldState 
+	 * @param {Discord.VoiceState} newState 
+	 */
+	onVoiceStateUpdate(oldState, newState) {
+		const guild = this.getGuild(oldState.guild);
+	
+		if (!guild.queue.voice || guild.queue.voice.id !== oldState.channelId) {
+			return;
+		}
+		
+		let members = newState.channel.members;
+		if (members.size === 1 && members.firstKey() === this.ID) {
+			this.sendNotification('⏹ Music stopped since everyone left the channel.', 'info', null, guild.queue.text);
+			guild.queue.end();
+		}
+	};
+
+	/**
+	 * 
+	 * @param {Discord.Guild} guild 
+	 */
+	onGuildCreate(guild) {
+		this.user.setActivity(`over ${this.guilds.cache.size} servers...`, { type: 'WATCHING' });
+		this.getGuild(guild); // Initializes a new guild
+		console.log(`New guild: ${guild.name}`);
+	}
+
+	onError(err) {
+		console.error('—————————— ERROR ——————————');
+		console.error(err);
+		console.error('———————— END ERROR ————————');
+	};
+	
+	onDisconnected() {
+		console.error('——————— DISCONNECTED ——————');
+	};
+
+	initHandlers() {
+		this.on(Discord.Events.ClientReady, this.onReady);
+		this.on(Discord.Events.InteractionCreate, this.onInteractionCreate);
+		this.on(Discord.Events.VoiceStateUpdate, this.onVoiceStateUpdate);
+		this.on(Discord.Events.GuildCreate, this.onGuildCreate);
+		this.on(Discord.Events.Error, this.onError);
+		this.on(Discord.Events.ShardDisconnect, this.onDisconnected);
 	}
 }
