@@ -368,7 +368,12 @@ module.exports = class Bot extends Discord.Client {
 			return;
 		}
 		
-		let members = newState.channel.members;
+		let members = newState.channel?.members;
+		
+		// If there was some issue getting the list of members, we can't determine if
+		// the bot is the only member in the voice channel, so ignore.
+		if (members === undefined) return;
+
 		if (members.size === 1 && members.firstKey() === this.ID) {
 			this.sendNotification('⏹ Music stopped since everyone left the channel.', 'info', null, guild.queue.text);
 			guild.queue.end();
