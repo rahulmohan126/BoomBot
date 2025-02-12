@@ -7,6 +7,8 @@ const Bot = require('./bot');
 const Guild = require('./guild');
 const Song = require('./song');
 
+const HIGH_WATER_MARK = 10 * (1 << 20); // 10 MiB
+
 /**
  * Sleep function that pauses the current thread by the specified time
  * @param {Number} delayMs Number of milliseconds to delay
@@ -217,7 +219,8 @@ module.exports = class MusicQueue {
 			agent: this.client.agent,
 			filter: 'audioonly',
 			quality: 'highestaudio',
-			highWaterMark: 1024 * 1024 * 5
+			dlChunkSize: 0,
+			highWaterMark: HIGH_WATER_MARK
 		});
 
 		this.player = DiscordVoice.createAudioPlayer();
