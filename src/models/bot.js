@@ -300,20 +300,18 @@ module.exports = class Bot extends Discord.Client {
 	 * @param {Discord.VoiceState} newState 
 	 */
 	onVoiceStateUpdate(oldState, newState) {
-		const guild = this.getGuild(oldState.guild);
-	
-		if (!guild.queue.voice || guild.queue.voice.id !== oldState.channelId) {
-			return;
-		}
-		
-		let members = newState.channel?.members;
-		
-		// If there was some issue getting the list of members, we can't determine if
-		// the bot is the only member in the voice channel, so ignore.
-		if (members === undefined) return;
+		// Check for relevant voice activity
+		const voiceChannel = oldState.channel || newState.channel;
+    if (!voiceChannel) return;
 
-		if (members.size === 1 && members.firstKey() === this.ID) {
+		// Check if bot is in channel
+		const botMember = voiceChannel.members.get(this.BOTID);
+    if (!botMember) return;
+
+		// Check if bot is only member in voice channel
+		if (voiceChannel.members.size === 1) {
 			this.sendNotification('⏹ Music stopped since everyone left the channel.', 'info', null, guild.queue.text);
+			const guild = this.getGuild(oldState.guild);
 			guild.queue.end();
 		}
 	};

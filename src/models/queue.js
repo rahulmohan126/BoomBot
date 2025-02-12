@@ -232,9 +232,12 @@ module.exports = class MusicQueue {
 		})
 
 		stream.on('error', err => {
+			console.log("STREAM ERROR: ");
 			console.log(err);
+			
 			let errorMsg = `Sorry, there was an error processing "${this.nowPlaying.title}", moving to the next song in the queue`;
 			this.client.sendNotification(errorMsg, 'error', null, this.text);
+			
 			this.looping = false;
 			stream.destroy();
 			this.player.stop();
@@ -242,13 +245,16 @@ module.exports = class MusicQueue {
 		});
 
 		this.connection.on('error', err => {
+			console.log("CONNECTION ERROR: ");
 			console.log(err);
+			this.end();
 		});
 
 		song.startTime = Date.now();
 
 		this.player.on(DiscordVoice.AudioPlayerStatus.Idle, () => {
 			stream.destroy();
+			
 			// Plays the next song (if looped, the queue will remian unchanged and continue playing the first item)
 			if (this.looping) this.play(this.nowPlaying);
 			else this.play(this.songs[0]);
