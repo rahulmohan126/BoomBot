@@ -14,38 +14,6 @@ module.exports = [
     ],
   },
   {
-    name: 'soundboard',
-    description: 'Soundboard options',
-    options: [
-      {
-        name: 'add',
-        description: 'Add a new sound',
-        type: Discord.ApplicationCommandOptionType.Subcommand,
-        options: [
-          {
-            name: 'sound',
-            description: 'New sound',
-            type: Discord.ApplicationCommandOptionType.Attachment,
-            required: true
-          }
-        ]
-      },
-      {
-        name: 'remove',
-        description: 'Remove a sound',
-        type: Discord.ApplicationCommandOptionType.Subcommand,
-        options: [
-          {
-            name: 'sound',
-            description: 'Name of the sound being removed',
-            type: Discord.ApplicationCommandOptionType.String,
-            required: true
-          }
-        ]
-      }
-    ]
-  },
-  {
     name: 'proxy',
     description: 'Change the YouTube proxy (Bot Owner Only)',
     options: [

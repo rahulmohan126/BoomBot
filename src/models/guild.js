@@ -27,8 +27,6 @@ module.exports = class Guild {
 		this.dj = info.dj;
 		this.instant = info.instant;
 
-		this.soundboard = {};
-
 		this.queue = new MusicQueue(this.client, this);
 	}
 
@@ -68,15 +66,6 @@ module.exports = class Guild {
 	 */
 	checkVoiceChannelByID(channelID) {
 		return this.voiceChannel === '' ? true : this.voiceChannel === channelID;
-	}
-
-	/**
-	 * Checks whether this guild's soundboard has a sound with the given name
-	 * @param {String} command 
-	 * @returns
-	 */
-	hasSoundboard(command) {
-		return !!this.soundboard[command];
 	}
 
 	/**

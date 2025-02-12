@@ -48,10 +48,6 @@ module.exports = class Bot extends Discord.Client {
 		if (!fs.existsSync('./data/guild.json')) {
 			fs.writeFileSync('./data/guild.json', '{}');
 		}
-
-		if (!fs.existsSync('./data/soundboard')) {
-			fs.mkdirSync('./data/soundboard');
-		}
 	}
 
 	/**
@@ -114,67 +110,10 @@ module.exports = class Bot extends Discord.Client {
 		console.log('———— All Commands Loaded! ————');
 	}
 
-	/**
-	 * Loads all global and guild soundboard commands
-	 */
-	loadSoundboard() {
-		var audioFiles = fs.readdirSync('./data/soundboard/');
-		for (let file of audioFiles) {
-			// Global soundboard files
-			let fileDirectory = `./data/soundboard/${file}`;
-			if (file.endsWith('.mp3')) {
-				let fileName = file.slice(0, -4);
-				try {
-					const command = this.createSoundboardCommand(fileName);
-
-					this.commands.push(command);
-					this.commandDict[fileName] = command;
-				} catch (error) {
-					console.log(error);
-				}
-			}
-			// Loads guild soundboard
-			else if (fs.statSync(fileDirectory).isDirectory()) {
-				var guildFiles = fs.readdirSync(fileDirectory);
-
-				for (let subfile of guildFiles) {
-					let subFileName = subfile.slice(0, -4);
-					try {
-						const command = this.createSoundboardCommand(subFileName, true);
-						const guild = this.getGuildByID(file);
-
-						if (!guild) {
-							throw new Error('No guild with that id exists');
-						}
-						
-						guild.soundboard[subFileName] = command;
-					} catch (error) {
-						console.log(error);
-					}
-				}
-			}
-		}
-	}
-
 	registerCommands() {
 		const commands = require('../slash');
 		commands.forEach(async (cmd) => {
 			await this.application.commands.create(cmd);
-		});
-	}
-
-	createSoundboardCommand(fileName, guildCommand = false) {
-		return new Command(fileName, {
-			main: function (bot, guild, int) {
-				const voiceChannel = int.member.voice.channel;
-
-				if (voiceChannel && guild.checkVoiceChannelByID(voiceChannel.id)) {
-					guild.queue.playFile(int, voiceChannel, fileName, guildCommand);
-				}
-			},
-			help: 'A soundboard effect',
-			usage: fileName,
-			soundboard: true,
 		});
 	}
 
@@ -300,7 +239,6 @@ module.exports = class Bot extends Discord.Client {
 		this.loadGuilds();
 		this.loadCommands();
 		this.registerCommands();
-		this.loadSoundboard();
 	}
 
 	/**

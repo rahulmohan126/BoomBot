@@ -34,6 +34,5 @@ module.exports = {
 	},
 	help: 'Pro',
 	usage: 'proxy [new proxy]',
-	module: 'admin',
-	hide: true
+	module: 'admin'
 }

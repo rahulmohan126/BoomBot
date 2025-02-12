@@ -258,41 +258,4 @@ module.exports = class MusicQueue {
 			'channel': this.text, 'member': song.requestedBy
 		});
 	}
-
-
-	/**
-	 * Plays a file from the sounboard database into a voice channel
-	 * @param {Discord.ChatInputCommandInteraction} int 
-	 * @param {Discord.VoiceChannel} voiceChannel 
-	 * @param {String} fileName 
-	 * @param {boolean} guildCommand 
-	 */
-	async playFile(int, voiceChannel, fileName, guildCommand) {
-		// Prevents overriding music being played
-		if (this.inUse) {
-			return;
-		}
-
-		this.inUse = true;
-		this.voice = voiceChannel;
-		await this.join();
-
-		if (!this.connection) {
-			this.client.sendNotification('Cannot join this voice channel', 'error', int);
-			return;
-		}
-
-		var directory = './data/soundboard';
-		if (guildCommand) {
-			directory += '/' + voiceChannel.guild.id;
-		}
-
-		this.player = DiscordVoice.createAudioPlayer();
-		this.player.play(DiscordVoice.createAudioResource(`${directory}/${fileName}.mp3`));
-		this.connection.subscribe(this.player);
-
-		this.player.on(DiscordVoice.AudioPlayerStatus.Idle, () => {
-			this.end();
-		});
-	}
 }
