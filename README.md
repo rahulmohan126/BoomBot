@@ -6,7 +6,7 @@ This project is a simple Discord Music bot, so you can have more control over yo
 
 This project is still in progress, so report any bugs or issues, and they will be fixed as soon as possible.
 
-This project has been tested using both Node.js 12 and 14 on OS X (10.15), Windows 10, and Ubuntu 20.04.
+This project requires Node.js 22.12 or newer (required by `@discordjs/voice`).
 
 ## Docker
 

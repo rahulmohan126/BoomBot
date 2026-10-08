@@ -1,6 +1,6 @@
 const Bot = require('../models/bot');
 const Guild = require('../models/guild');
-const { ChatInputCommandInteraction } = require('discord.js');
+const { ChatInputCommandInteraction, PermissionFlagsBits } = require('discord.js');
 
 module.exports = {
 	/**
@@ -33,10 +33,10 @@ module.exports = {
 		// Checks channel permissions
 		const permissions = voiceChannel.permissionsFor(bot.user);
 				
-		if (!permissions.has('Connect')) {
+		if (!permissions.has(PermissionFlagsBits.Connect)) {
 			return bot.sendNotification('I cannot connect to your voice channel, make sure I have the proper permissions!', 'error', int);
 		}
-		else if (!permissions.has('Speak')) {
+		else if (!permissions.has(PermissionFlagsBits.Speak)) {
 			return bot.sendNotification('I cannot speak in this voice channel, make sure I have the proper permissions!', 'error', int);
 		}
 

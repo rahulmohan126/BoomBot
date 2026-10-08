@@ -12,7 +12,7 @@ const Bot = require('./models/bot');
 
 const config = JSON.parse(fs.readFileSync(`./settings.json`));
 const cookies = JSON.parse(fs.readFileSync(`./cookies.json`));
-const bot = new Bot(startTime, { autoReconnect: true, intents: [
+const bot = new Bot(startTime, { intents: [
 	GatewayIntentBits.Guilds,
 	GatewayIntentBits.GuildMembers,
 	GatewayIntentBits.GuildMessages,

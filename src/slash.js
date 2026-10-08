@@ -36,7 +36,7 @@ module.exports = [
       {
         name: 'position',
         description: 'Position of the song to be removed',
-        type: Discord.ApplicationCommandOptionType.Number,
+        type: Discord.ApplicationCommandOptionType.Integer,
         required: true
       }
     ]

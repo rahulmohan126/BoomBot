@@ -61,7 +61,7 @@ module.exports = class Bot extends Discord.Client {
 				this.database.set(guild.id, new Guild(this, guild, jsonInfo[guild.id]));
 			}
 			else {
-				this.database.set(guild.id, new Guild(guild));
+				this.database.set(guild.id, new Guild(this, guild));
 			}
 		}
 
@@ -269,7 +269,7 @@ module.exports = class Bot extends Discord.Client {
 
 	onReady() {
 		this.start();
-		this.user.setActivity(`over ${this.guilds.cache.size} servers...`, { type: 'WATCHING' });
+		this.user.setActivity(`over ${this.guilds.cache.size} servers...`, { type: Discord.ActivityType.Watching });
 	
 		const startuptime = Date.now() - this.START_TIME;
 		console.log('ACTIVE SERVERS: ')
@@ -305,13 +305,15 @@ module.exports = class Bot extends Discord.Client {
     if (!voiceChannel) return;
 
 		// Check if bot is in channel
-		const botMember = voiceChannel.members.get(this.BOTID);
+		const botMember = voiceChannel.members.get(this.user.id);
     if (!botMember) return;
 
 		// Check if bot is only member in voice channel
 		if (voiceChannel.members.size === 1) {
-			this.sendNotification('⏹ Music stopped since everyone left the channel.', 'info', null, guild.queue.text);
 			const guild = this.getGuild(oldState.guild);
+			if (guild.queue.text) {
+				this.sendNotification('⏹ Music stopped since everyone left the channel.', 'info', null, guild.queue.text);
+			}
 			guild.queue.end();
 		}
 	};
@@ -321,7 +323,7 @@ module.exports = class Bot extends Discord.Client {
 	 * @param {Discord.Guild} guild 
 	 */
 	onGuildCreate(guild) {
-		this.user.setActivity(`over ${this.guilds.cache.size} servers...`, { type: 'WATCHING' });
+		this.user.setActivity(`over ${this.guilds.cache.size} servers...`, { type: Discord.ActivityType.Watching });
 		this.getGuild(guild); // Initializes a new guild
 		console.log(`New guild: ${guild.name}`);
 	}

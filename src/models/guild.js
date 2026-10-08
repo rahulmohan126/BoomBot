@@ -41,10 +41,10 @@ module.exports = class Guild {
 
 		var member = this.members.resolve(memberResolvable);
 
-		if (this.ownerID === member.id || this.client.OWNERID === member.id) {
+		if (this.ownerId === member.id || this.client.OWNERID === member.id) {
 			return 0;
 		}
-		else if (member.permissions.has('ADMINISTRATOR') || (this.dj !== '' && member.roles.cache.has(this.dj))) {
+		else if (member.permissions.has(Discord.PermissionFlagsBits.Administrator) || (this.dj !== '' && member.roles.cache.has(this.dj))) {
 			return 1;
 		}
 		else {

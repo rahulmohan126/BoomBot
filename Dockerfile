@@ -1,6 +1,6 @@
 # For easier deployment, use Docker to deploy boombot with ease.
 
-FROM node:20.18.3-bullseye-slim
+FROM node:22-bookworm-slim
 
 RUN ldd --version
 
