@@ -1,6 +1,6 @@
 const Discord = require('discord.js');
 const YouTube = require('simple-youtube-api');
-const ytdl = require('@distube/ytdl-core');
+const { createClient } = require('./youtube');
 const fs = require('fs');
 
 const Guild = require('./guild');
@@ -258,13 +258,33 @@ module.exports = class Bot extends Discord.Client {
 	}
 
 	/**
-	 * Updates the YouTube agent to use a new proxy (or not if newProxy is null)
+	 * Updates the YouTube client to use a new proxy (or not if newProxy is null)
 	 * @param {String|null} newProxy 
 	 */
 	buildAgent(newProxy) {
-		this.agent = (newProxy === null) ? ytdl.createAgent(this.cookies) : ytdl.createProxyAgent(newProxy, this.cookies);
 		this.PROXY = newProxy;
-		this.updateConfig();	
+		this.innertube = null;
+		this.updateConfig();
+
+		this.getYouTube().catch(err => {
+			console.log('Failed to create YouTube client:');
+			console.log(err);
+		});
+	}
+
+	/**
+	 * Gets the YouTube client, creating it if it doesn't exist (or failed to be created)
+	 * @returns {Promise<Innertube>}
+	 */
+	getYouTube() {
+		if (!this.innertube) {
+			this.innertube = createClient(this.cookies, this.PROXY).catch(err => {
+				this.innertube = null;
+				throw err;
+			});
+		}
+
+		return this.innertube;
 	}
 
 	onReady() {

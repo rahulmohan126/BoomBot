@@ -1,7 +1,7 @@
 const Discord = require('discord.js');
 const DiscordVoice = require('@discordjs/voice');
 const YouTube = require('simple-youtube-api');
-const ytdl = require('@distube/ytdl-core');
+const { Readable } = require('stream');
 
 const Bot = require('./bot');
 const Guild = require('./guild');
@@ -215,13 +215,33 @@ module.exports = class MusicQueue {
 		this.nowPlaying = song;
 		this.songs.shift();
 
-		const stream = ytdl(song.url, {
-			agent: this.client.agent,
-			filter: 'audioonly',
-			quality: 'highestaudio',
-			dlChunkSize: 0,
-			highWaterMark: HIGH_WATER_MARK
-		});
+		let stream;
+		try {
+			const innertube = await this.client.getYouTube();
+			const webStream = await innertube.download(song.id, {
+				type: 'audio',
+				quality: 'best',
+				format: 'any'
+			});
+			stream = Readable.fromWeb(webStream, { highWaterMark: HIGH_WATER_MARK });
+		}
+		catch (err) {
+			console.log("STREAM ERROR: ");
+			console.log(err);
+
+			let errorMsg = `Sorry, there was an error processing "${song.title}", moving to the next song in the queue`;
+			this.client.sendNotification(errorMsg, 'error', null, this.text);
+
+			this.looping = false;
+			this.play(this.songs[0]);
+			return;
+		}
+
+		// Queue may have been stopped while the stream was loading
+		if (!this.connection) {
+			stream.destroy();
+			return;
+		}
 
 		this.player = DiscordVoice.createAudioPlayer();
 		this.resource = DiscordVoice.createAudioResource(stream);
