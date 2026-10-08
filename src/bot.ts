@@ -47,8 +47,11 @@ export class BoomBot {
   }
 
   updatePresence(): void {
-    this.client.user?.setActivity(`over ${this.client.guilds.cache.size} servers...`, {
-      type: ActivityType.Watching,
+    const count = this.client.guilds.cache.size;
+    this.client.user?.setActivity({
+      name: 'Custom Status',
+      type: ActivityType.Custom,
+      state: `Connected to ${count} ${count === 1 ? 'server' : 'servers'}...`,
     });
   }
 
