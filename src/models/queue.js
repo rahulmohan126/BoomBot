@@ -228,6 +228,7 @@ module.exports = class MusicQueue {
 		catch (err) {
 			console.log("STREAM ERROR: ");
 			console.log(err);
+			if (!this.connection) return;
 
 			let errorMsg = `Sorry, there was an error processing "${song.title}", moving to the next song in the queue`;
 			this.client.sendNotification(errorMsg, 'error', null, this.text);
