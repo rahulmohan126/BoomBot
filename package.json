@@ -1,10 +1,21 @@
 {
   "name": "boombot",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A music bot for discord",
-  "main": "src/main.js",
+  "type": "module",
+  "main": "dist/index.js",
   "scripts": {
-    "start": "node src/main.js"
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=22.12.0"
   },
   "repository": {
     "type": "git",
@@ -18,11 +29,22 @@
   "homepage": "https://github.com/rahulmohan126/BoomBot#readme",
   "dependencies": {
     "@discordjs/opus": "^0.10.0",
-    "@discordjs/voice": "^0.16.0",
-    "@distube/ytdl-core": "^4.16.6",
-    "discord.js": "^14.18.0",
-    "ffmpeg-static": "^5.1.0",
-    "libsodium-wrappers": "^0.7.11",
-    "simple-youtube-api": "^5.2.1"
+    "@discordjs/voice": "^0.19.2",
+    "discord.js": "^14.27.0",
+    "ffmpeg-static": "^5.3.0",
+    "undici": "^7.30.0",
+    "youtubei.js": "^18.1.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.20.5",
+    "eslint": "^10.12.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.9",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0",
+    "typescript-eslint": "^8.71.1",
+    "vitest": "^5.0.3"
   }
 }

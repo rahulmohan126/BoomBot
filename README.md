@@ -1,106 +1,119 @@
 # BoomBot
 
-## About
+A self-hosted Discord music bot that plays audio from YouTube, written in TypeScript.
 
-This project is a simple Discord Music bot, so you can have more control over your bots and build them out to your specifications. It includes basic commands and a simple permissions system.
+- Slash commands for playing videos, playlists, and search results
+- Queue management, looping, pause/resume, now-playing progress
+- Optional YouTube cookies and HTTP proxy support
+- Per-server settings (allowed voice channel, DJ role)
 
-This project is still in progress, so report any bugs or issues, and they will be fixed as soon as possible.
+Requires **Node.js 22.12 or newer** and **[yt-dlp](https://github.com/yt-dlp/yt-dlp#installation)** (which streams the audio) on your `PATH`, or at the path in the `YT_DLP_PATH` environment variable. Keep yt-dlp up to date (e.g. `brew upgrade yt-dlp` or `yt-dlp -U`): YouTube changes often break older versions.
 
-This project has been tested using both Node.js 12 and 14 on OS X (10.15), Windows 10, and Ubuntu 20.04.
+## Commands
 
-## Docker
+| Command               | Description                                                                 |
+| --------------------- | --------------------------------------------------------------------------- |
+| `/play <query>`       | Play a YouTube video link, playlist link, or the top search result          |
+| `/queue`              | Show the upcoming songs and time left                                       |
+| `/np`                 | Show the current song and its progress                                      |
+| `/skip`               | Skip the current song                                                       |
+| `/pause` / `/resume`  | Pause or resume playback                                                    |
+| `/loop`               | Loop the current song until skipped or stopped                              |
+| `/remove <position>`  | Remove a song from the queue                                                |
+| `/stop`               | Stop playback, clear the queue and leave the channel                        |
+| `/ping`               | Check the bot's latency                                                     |
+| `/uptime`             | See how long the bot has been running                                       |
+| `/proxy <proxy-link>` | Change the YouTube proxy, or `off` to disable it (bot or server owner only) |
 
-In the "Installation" section, follow instructions until the end of "Creating a settings.json" At that point, you should have everything you need to set up a docker container.
+The bot leaves the voice channel when everyone else leaves, or after 5 minutes with an empty queue.
 
-Docker Compose:
-```yaml
-services:
-    boombot:
-        image: rahulmohan126/boombot:latest
-        container_name: boombot
-        restart: always
-        volumes:
-            - ./my/saved/data:/boombot/data # ./my/saved/data can be changed accordingly
-            - ./my_settings.json:/boombot/settings.json # ./my_settings.json can be changed accordingly
-```
+## Setup
 
-Be aware that terminal commands cannot be used while using Docker, but everything else should be fully functional.
+### 1. Create a Discord bot
 
-## Installation
+1. Create an application in the [Discord Developer Portal](https://discord.com/developers/applications).
+2. Under **Bot**, reset and copy the **token**. No privileged gateway intents are needed.
+3. Invite the bot with the `bot` and `applications.commands` scopes and the **Connect**, **Speak**, **Send Messages**, **Embed Links** and **Attach Files** permissions.
+4. To get **your user ID**, enable Developer Mode in Discord (Settings → Advanced), then right-click your name and choose "Copy User ID".
 
-### Creating a Bot
+### 2. Create `settings.json`
 
-Login to your discord account and go to [this](https://discordapp.com/developers/applications/) link. Select "new application" and input a name. Once the application is created, copy the **client id** from General Information. Then select bot on the left and select "add bot" and confirm (you may need to change your application name in general information if too many users have this username). Once the bot is added, select "click to reveal token" to get the **client token** in the bot menu.
+Copy `settings-template.json` to `settings.json` in the project root and fill it in:
 
-To get your id, open up the discord app, go to settings -> appearance, then scroll down to Developer Mode and toggle it on. Then go to a server that you are in and find yourself in the member list and right-click. "Copy ID" should show up, click it, and **your id** will automatically be copied to your clipboard.
-
-**Your prefix** is up to you to choose, preferably pick something short and uncommon to start a message with such as "?".
-
-For your API key, go to [this](https://developers.google.com/youtube/v3/getting-started) link and follow instructions 1-3 (make sure to create an unrestricted key). Then go to [this](https://console.developers.google.com/) link and go to the Credentials menu; under API keys, you should see the key you created, copy the **key** and paste it into your settings.json
-
-:warning: DO NOT SHARE YOUR API KEY OR CLIENT TOKEN WITH ANYONE :warning:
-
-### Setting up your settings.json
-
-Rename the "settings-template.json" to "settings.json" and fill in the appropriate information as shown below:
-
-```
+```json
 {
-    "BOTID":"Your client id",
-    "OWNERID":"Your id",
-    "PREFIX":"Your prefix",
-    "TOKEN":"Your client token",
-    "GOOGLE_API_KEY":"Your API key"
+  "TOKEN": "Your bot token",
+  "OWNERID": "Your Discord user ID",
+  "PREFIX": ".",
+  "PROXY": null
 }
 ```
 
-Put all ids/tokens/keys in between the quotation marks.
-This file should be placed in the project's root directory.
+- `PROXY` is optional: an `http(s)://host:port` proxy for YouTube requests. It is updated by the `/proxy` command.
+- Older settings files still work; `BOTID` and `GOOGLE_API_KEY` are no longer needed and are ignored.
 
-### Requirements
+:warning: Never share your bot token. :warning:
 
-#### node.js
-Go to [this](https://nodejs.org/en/download/) link and download the Node.js installer for your operating system.
-Follow the installation steps to get node.js.
-NPM (node package manager) is installed with Node.
+### 3. (Optional) Add YouTube cookies
 
-#### Dependencies and Setup
+If YouTube blocks playback (age-restricted videos, "sign in to confirm you're not a bot"), export your YouTube cookies to `cookies.json` in the project root, either as an array of `{ "name", "value" }` objects (the format browser cookie-export extensions produce) or as a single `Cookie` header string. They are used for both metadata lookups and yt-dlp (converted to `data/yt-dlp-cookies.txt` on startup). Use a spare account: heavy automated use can get an account flagged.
 
-After downloading node.js and cloning/downloading the project, in your shell, enter the following:
+### 4. Install and run
+
 ```bash
-cd path/to/project
 npm install
-```
-
-## Usage
-
-````bash
+npm run build
 npm start
-````
-To terminate the bot, just type stop into the shell and enter. You can also `reload`, `load`, and `unload` commands. Reloading allows for modified command files (this does not include "bot.js") to be refreshed without taking the bot offline. Loading and unloading are pretty straightforward (all commands are automatically loaded on bot startup).
-
-Once the bot has been started, to use any command, type it into the shell. Example:
-```bash
-reload <primary name> # Command aliases won't work in the reload/load/unload commands.
-
-stop # Safely terminates the bot
 ```
 
-### Commands
+Per-server settings are stored in `data/guild.json`.
 
-* `np` *now playing*
-* `pause`
-* `ping`
-* `play (song)` *entering no song will give the top YouTube music videos*
-* `queue`
-* `resume`
-* `skip`
-* `stop`
-* `prefix (prefix)` **Admin command**
-* `channel [voice | text] (channel name | all)` *the last argument is only required when changing designated channels* **Admin command**
-* `loop` Loops the song.
-* `invite` Gives the invite URL so others can add the bot to their server.
-* `dj (dj role)` Assigns a role that can administrate the bot. **Only the owner can use this command.**
+## Docker
+
+```bash
+docker build -t boombot .
+```
+
+Docker Compose:
+
+```yaml
+services:
+  boombot:
+    image: boombot
+    container_name: boombot
+    restart: always
+    volumes:
+      - ./settings.json:/boombot/settings.json
+      - ./cookies.json:/boombot/cookies.json # optional
+      - ./data:/boombot/data
+```
+
+## Development
+
+| Script              | Description                             |
+| ------------------- | --------------------------------------- |
+| `npm run dev`       | Run from source with auto-restart (tsx) |
+| `npm run build`     | Compile to `dist/`                      |
+| `npm test`          | Run the unit tests (Vitest)             |
+| `npm run lint`      | Lint with ESLint                        |
+| `npm run format`    | Format with Prettier                    |
+| `npm run typecheck` | Type-check without emitting             |
+
+### Project structure
+
+```
+src/
+  index.ts            Entry point: load config, start the bot, graceful shutdown
+  bot.ts              BoomBot: owns the Discord client and services, wires events
+  config.ts           settings.json / cookies.json loading and validation
+  commands/           One file per slash command, plus shared preconditions (guards.ts)
+  events/             Discord event handlers
+  music/              MusicQueue (per-server playback state), QueueManager, Track
+  youtube/            YouTubeService (search, videos, playlists via youtubei.js; audio via yt-dlp) and helpers
+  guilds/             Per-server settings store and permission levels
+  ui/                 Embed builders and time/progress formatting
+test/                 Unit tests
+```
 
 ## License
 

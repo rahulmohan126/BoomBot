@@ -1,8 +1,6 @@
 {
-	"BOTID":"XXX",
-	"OWNERID":"XXX",
-	"PREFIX":".",
-	"TOKEN":"XXX",
-	"GOOGLE_API_KEY":"XXX",
-	"PROXY": "XXX"
+  "TOKEN": "Your bot token",
+  "OWNERID": "Your Discord user ID",
+  "PREFIX": ".",
+  "PROXY": null
 }

@@ -3,4 +3,5 @@ settings.json
 cookies.json
 node_modules
 data
-package-lock.json
+dist
+coverage
