@@ -8,7 +8,11 @@ const DOMAIN = '(?!-)([a-zA-Z0-9-]{1,63}(?<!-)\\.)+[a-zA-Z]{2,}';
 const OCTET = '(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)';
 const IP_ADDRESS = `${OCTET}\\.${OCTET}\\.${OCTET}\\.${OCTET}`;
 const PORT = ':\\d{1,5}';
-export const PROXY_REGEX = new RegExp(`^(${PROTOCOL})((${DOMAIN})|(${IP_ADDRESS}))(${PORT})$`);
+/** Optional user[:password]@, with special characters percent-encoded as in any URL */
+const CREDENTIALS = '([^\\s:@/]+(:[^\\s@/]*)?@)?';
+export const PROXY_REGEX = new RegExp(
+  `^(${PROTOCOL})${CREDENTIALS}((${DOMAIN})|(${IP_ADDRESS}))(${PORT})$`,
+);
 
 export const proxy: Command = {
   data: new SlashCommandBuilder()
@@ -26,7 +30,10 @@ export const proxy: Command = {
     const address = input === 'off' ? null : input;
 
     if (address !== null && !PROXY_REGEX.test(address)) {
-      await notify('Invalid proxy, expected e.g. http://127.0.0.1:8080', 'error');
+      await notify(
+        'Invalid proxy, expected e.g. http://127.0.0.1:8080 or http://user:pass@127.0.0.1:8080',
+        'error',
+      );
       return;
     }
 
