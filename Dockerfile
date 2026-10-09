@@ -2,6 +2,12 @@
 FROM node:22-bookworm-slim AS build
 WORKDIR /boombot
 
+# @discordjs/opus has no prebuilt binary for this Node/glibc combination, so it compiles from
+# source with node-gyp. The toolchain stays in this stage and never reaches the runtime image.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends python3 make g++ \
+  && rm -rf /var/lib/apt/lists/*
+
 COPY package.json package-lock.json ./
 RUN npm ci
 
